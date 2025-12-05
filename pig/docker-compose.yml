@@ -1,0 +1,40 @@
+version: "3"
+
+# =============================================================================
+# APACHE PIG (Data Flow Scripting)
+# =============================================================================
+# Start with: docker-compose up -d
+# Stop with:  docker-compose down
+#
+# ⚠️  REQUIRES: Hadoop (start hadoop first!)
+#
+# Usage: docker exec -it pig pig
+#        docker exec -it pig pig -x local  (local mode, no HDFS)
+# =============================================================================
+
+networks:
+  bigdata-net:
+    name: bigdata-net
+    external: true
+
+services:
+  # ---------------------------------------------------------------------------
+  # APACHE PIG
+  # ---------------------------------------------------------------------------
+  pig:
+    image: suhothayan/hadoop-pig:2.7.2
+    container_name: pig
+    hostname: pig
+    restart: always
+    stdin_open: true
+    tty: true
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HADOOP_CONF_DIR=/etc/hadoop
+    volumes:
+      - pig_scripts:/pig/scripts
+    networks:
+      - bigdata-net
+
+volumes:
+  pig_scripts:

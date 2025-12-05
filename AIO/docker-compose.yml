@@ -1,7 +1,18 @@
 version: "3"
 
+# =============================================================================
+# 🐘 BIG DATA FULL STACK
+# =============================================================================
+# All services in one compose file
+# Start: docker-compose up -d
+# Stop:  docker-compose down
+#
+# ⚠️  REQUIRES: 10-12 GB RAM minimum
+# =============================================================================
+
 networks:
   bigdata-net:
+    name: bigdata-net
     driver: bridge
 
 services:
@@ -11,8 +22,12 @@ services:
   zookeeper:
     image: zookeeper:3.5
     container_name: zookeeper
+    restart: always
     ports:
       - "2181:2181"
+    volumes:
+      - zookeeper_data:/data
+      - zookeeper_datalog:/datalog
     networks:
       - bigdata-net
 
@@ -54,16 +69,20 @@ services:
   hive-metastore-postgresql:
     image: postgres:9.6
     container_name: hive-postgres
+    restart: always
     environment:
       - POSTGRES_DB=metastore
       - POSTGRES_USER=hive
       - POSTGRES_PASSWORD=hive
+    volumes:
+      - hive_postgres_data:/var/lib/postgresql/data
     networks:
       - bigdata-net
 
   hive-metastore:
     image: bde2020/hive-metastore-postgresql:2.3.0
     container_name: hive-metastore
+    restart: always
     environment:
       - HIVE_SITE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
       - HIVE_SITE_CONF_javax_jdo_option_ConnectionDriverName=org.postgresql.Driver
@@ -79,6 +98,7 @@ services:
   hive-server:
     image: bde2020/hive:2.3.2-postgresql-metastore
     container_name: hive-server
+    restart: always
     ports:
       - "10000:10000" # JDBC
       - "10002:10002" # Web UI
@@ -97,6 +117,7 @@ services:
   spark-master:
     image: bde2020/spark-master:3.0.0-hadoop3.2
     container_name: spark-master
+    restart: always
     ports:
       - "8080:8080" # Spark Master UI
       - "7077:7077" # Spark Master Port
@@ -111,10 +132,11 @@ services:
   spark-worker:
     image: bde2020/spark-worker:3.0.0-hadoop3.2
     container_name: spark-worker
+    restart: always
     ports:
-      - "8081:8081"
+      - "8081:8081" # Spark Worker UI
     environment:
-      - "SPARK_MASTER=spark://spark-master:7077"
+      - SPARK_MASTER=spark://spark-master:7077
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     depends_on:
       - spark-master
@@ -128,6 +150,7 @@ services:
     image: bde2020/hbase-master:1.0.0-hbase1.2.6
     container_name: hbase-master
     hostname: hbase-master
+    restart: always
     ports:
       - "16010:16010" # HBase Master UI
     environment:
@@ -144,6 +167,7 @@ services:
     image: bde2020/hbase-regionserver:1.0.0-hbase1.2.6
     container_name: hbase-regionserver
     hostname: hbase-regionserver
+    restart: always
     environment:
       - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
       - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
@@ -159,15 +183,68 @@ services:
   cassandra:
     image: cassandra:4.0
     container_name: cassandra
+    restart: always
     ports:
       - "9042:9042" # CQL Native
     environment:
       - CASSANDRA_CLUSTER_NAME=DevCluster
       - CASSANDRA_DC=datacenter1
       - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=100M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # NEO4J (Graph Database)
+  # ---------------------------------------------------------------------------
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: neo4j
+    restart: always
+    ports:
+      - "7474:7474" # HTTP Browser UI
+      - "7687:7687" # Bolt Protocol
+    environment:
+      - NEO4J_AUTH=neo4j/password123
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=1G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # PIG (Data Flow Scripting)
+  # ---------------------------------------------------------------------------
+  pig:
+    image: suhothayan/hadoop-pig:2.7.2
+    container_name: pig
+    hostname: pig
+    restart: always
+    stdin_open: true
+    tty: true
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HADOOP_CONF_DIR=/etc/hadoop
+    volumes:
+      - pig_scripts:/pig/scripts
+    depends_on:
+      - namenode
     networks:
       - bigdata-net
 
 volumes:
   namenode_data:
   datanode_data:
+  zookeeper_data:
+  zookeeper_datalog:
+  hive_postgres_data:
+  cassandra_data:
+  neo4j_data:
+  neo4j_logs:
+  pig_scripts:

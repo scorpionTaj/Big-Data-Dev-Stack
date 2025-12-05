@@ -1,0 +1,73 @@
+version: "3"
+
+# =============================================================================
+# APACHE HIVE (Data Warehousing)
+# =============================================================================
+# Start with: docker-compose up -d
+# Stop with:  docker-compose down
+# JDBC:       localhost:10000
+# Web UI:     http://localhost:10002
+#
+# ⚠️  REQUIRES: Hadoop (start hadoop first!)
+# =============================================================================
+
+networks:
+  bigdata-net:
+    name: bigdata-net
+    external: true
+
+services:
+  # ---------------------------------------------------------------------------
+  # POSTGRESQL (Hive Metastore Database)
+  # ---------------------------------------------------------------------------
+  hive-metastore-postgresql:
+    image: postgres:9.6
+    container_name: hive-postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=metastore
+      - POSTGRES_USER=hive
+      - POSTGRES_PASSWORD=hive
+    volumes:
+      - hive_postgres_data:/var/lib/postgresql/data
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # HIVE METASTORE
+  # ---------------------------------------------------------------------------
+  hive-metastore:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    container_name: hive-metastore
+    restart: always
+    environment:
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionDriverName=org.postgresql.Driver
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionUserName=hive
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionPassword=hive
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - hive-metastore-postgresql
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # HIVE SERVER
+  # ---------------------------------------------------------------------------
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    restart: always
+    ports:
+      - "10000:10000" # JDBC
+      - "10002:10002" # Web UI
+    environment:
+      - HIVE_CORE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - hive-metastore
+    networks:
+      - bigdata-net
+
+volumes:
+  hive_postgres_data:

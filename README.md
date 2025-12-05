@@ -6,11 +6,13 @@
   <img src="https://img.shields.io/badge/Hive-2.3.2-green?style=for-the-badge&logo=apache-hive&logoColor=white" alt="Hive"/>
   <img src="https://img.shields.io/badge/HBase-1.2.6-red?style=for-the-badge&logo=apache&logoColor=white" alt="HBase"/>
   <img src="https://img.shields.io/badge/Cassandra-4.0-blue?style=for-the-badge&logo=apache-cassandra&logoColor=white" alt="Cassandra"/>
+  <img src="https://img.shields.io/badge/Neo4j-5.15-008CC1?style=for-the-badge&logo=neo4j&logoColor=white" alt="Neo4j"/>
+  <img src="https://img.shields.io/badge/Pig-0.17-pink?style=for-the-badge&logo=apache&logoColor=white" alt="Pig"/>
 </p>
 
 <p align="center">
-  <strong>A complete Big Data ecosystem orchestrated with Docker Compose</strong><br>
-  <em>Hadoop • Hive • HBase • Spark • Cassandra</em>
+  <strong>A modular Big Data ecosystem orchestrated with Docker Compose</strong><br>
+  <em>Start only what you need • Hadoop • Hive • HBase • Spark • Cassandra • Neo4j • Pig</em>
 </p>
 
 ---
@@ -18,6 +20,7 @@
 ## 📋 Table of Contents
 
 - [Prerequisites](#-prerequisites)
+- [Project Structure](#-project-structure)
 - [Quick Start](#-quick-start)
 - [Architecture](#-architecture)
 - [Access Points & UIs](#-access-points--uis)
@@ -29,26 +32,104 @@
 
 ## ⚠️ Prerequisites
 
-| Requirement       | Minimum  | Recommended |
-| ----------------- | -------- | ----------- |
-| 🐳 Docker         | Latest   | Latest      |
-| 🔧 Docker Compose | v2.0+    | v2.0+       |
-| 💾 RAM            | 10-12 GB | 16 GB       |
-| 🖥️ CPUs           | 4 cores  | 6+ cores    |
+|    Requirement    | Minimum | Recommended |
+| :---------------: | :-----: | :---------: |
+|     🐳 Docker     | Latest  |   Latest    |
+| 🔧 Docker Compose |  v2.0+  |    v2.0+    |
+|      💾 RAM       | 4-6 GB  |   8-16 GB   |
+|      🖥️ CPUs      | 2 cores |  4+ cores   |
 
-> **💡 Tip:** If you have less than 16GB RAM, consider commenting out services in `docker-compose.yml` that you aren't currently using (e.g., disable Cassandra if you're only working with Hive).
+> **💡 Tip:** With the modular setup, you can now run individual services with much lower resource requirements!
+
+---
+
+## 📁 Project Structure
+
+```
+BigData_Docker/
+├── 📄 docker-compose.yml      # Full stack (all services)
+├── 📄 README.md
+│
+├── 📂 hadoop/                  # HDFS Cluster
+│   └── docker-compose.yml
+│
+├── 📂 zookeeper/               # Coordination Service
+│   └── docker-compose.yml
+│
+├── 📂 hive/                    # Data Warehousing
+│   └── docker-compose.yml
+│
+├── 📂 spark/                   # Distributed Processing
+│   └── docker-compose.yml
+│
+├── 📂 hbase/                   # NoSQL Column Store
+│   └── docker-compose.yml
+│
+├── 📂 cassandra/               # NoSQL Wide-Column
+│   └── docker-compose.yml
+│
+├── 📂 neo4j/                   # Graph Database
+│   └── docker-compose.yml
+│
+└── 📂 pig/                     # Data Flow Scripting
+    └── docker-compose.yml
+```
 
 ---
 
 ## 🚀 Quick Start
 
-### 1️⃣ Start the cluster
+### 🎯 Option 1: Start Individual Services (Recommended)
+
+Start only the services you need with minimal resources:
+
+|     Service      |                Command                 |    Dependencies    |   RAM   |
+| :--------------: | :------------------------------------: | :----------------: | :-----: |
+|  🗂️ **Hadoop**   |  `cd hadoop && docker-compose up -d`   |        None        |  ~2 GB  |
+| 🦁 **Zookeeper** | `cd zookeeper && docker-compose up -d` |        None        | ~512 MB |
+|   ⚡ **Spark**   |   `cd spark && docker-compose up -d`   |       Hadoop       |  ~2 GB  |
+|   🐝 **Hive**    |   `cd hive && docker-compose up -d`    |       Hadoop       |  ~2 GB  |
+|   📊 **HBase**   |   `cd hbase && docker-compose up -d`   | Hadoop + Zookeeper |  ~1 GB  |
+| 🔵 **Cassandra** | `cd cassandra && docker-compose up -d` | None (standalone)  |  ~1 GB  |
+|   🕸️ **Neo4j**   |   `cd neo4j && docker-compose up -d`   | None (standalone)  |  ~1 GB  |
+|    🐷 **Pig**    |    `cd pig && docker-compose up -d`    |       Hadoop       | ~512 MB |
+
+#### 📋 Example: Start Hadoop + Spark
 
 ```bash
-docker-compose up -d
+# 1. Start Hadoop first (creates the network)
+cd hadoop && docker-compose up -d
+
+# 2. Wait for Hadoop to be ready (~1 min)
+docker logs -f namenode  # Wait until "Safe mode is OFF"
+
+# 3. Start Spark
+cd ../spark && docker-compose up -d
 ```
 
-### 2️⃣ Wait for initialization
+#### 📋 Example: Start HBase Stack
+
+```bash
+# 1. Start Hadoop (creates the network)
+cd hadoop && docker-compose up -d
+
+# 2. Start Zookeeper
+cd ../zookeeper && docker-compose up -d
+
+# 3. Start HBase
+cd ../hbase && docker-compose up -d
+```
+
+---
+
+### 🌐 Option 2: Start Full Stack
+
+Start all services at once (requires 10-12 GB RAM):
+
+```bash
+# From the root directory
+docker-compose up -d
+```
 
 ⏳ Allow **2-3 minutes** for all services to initialize:
 
@@ -56,16 +137,22 @@ docker-compose up -d
 - Hive Metastore schema initialization
 - HBase region assignment
 
-### 3️⃣ Verify services
+### ✅ Verify Services
 
 ```bash
 docker-compose ps
+
+# Or check specific service
+cd hadoop && docker-compose ps
 ```
 
-### 🛑 Stop the cluster
+### 🛑 Stop Services
 
 ```bash
-# Stop containers (preserves data)
+# Stop individual service (preserves data)
+cd hadoop && docker-compose down
+
+# Stop all services from root
 docker-compose down
 
 # Stop and remove all data (⚠️ destructive)
@@ -105,9 +192,14 @@ docker-compose down -v
 │                       │  (Metastore) │     │   Worker     │     │
 │                       └──────────────┘     │    :8081     │     │
 │                                            └──────────────┘     │
+│  ┌──────────────┐     ┌──────────────┐                          │
+│  │  Cassandra   │     │    Neo4j     │  (Standalone DBs)        │
+│  │    :9042     │     │    :7474     │                          │
+│  └──────────────┘     └──────────────┘                          │
+│                                                                  │
 │  ┌──────────────┐                                               │
-│  │  Cassandra   │  (Standalone NoSQL)                           │
-│  │    :9042     │                                               │
+│  │     Pig      │────────────────────────► HDFS                 │
+│  │  (Scripting) │                                               │
 │  └──────────────┘                                               │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -125,6 +217,7 @@ docker-compose down -v
 | ⚡ **Spark** |  Master UI  |  [http://localhost:8080](http://localhost:8080)  | View Spark jobs & workers   |
 | ⚡ **Spark** |  Worker UI  |  [http://localhost:8081](http://localhost:8081)  | View worker details         |
 | 📊 **HBase** |  Master UI  | [http://localhost:16010](http://localhost:16010) | View HBase tables & regions |
+| 🕸️ **Neo4j** |   Browser   |  [http://localhost:7474](http://localhost:7474)  | Graph database browser      |
 
 ### 🔗 Connection Ports
 
@@ -136,6 +229,7 @@ docker-compose down -v
 |   🗂️ **HDFS**    | `9000`  |   RPC    | Hadoop clients             |
 |   ⚡ **Spark**   | `7077`  |   RPC    | spark-submit               |
 | 🦁 **Zookeeper** | `2181`  |   TCP    | ZK clients                 |
+|   🕸️ **Neo4j**   | `7687`  |   Bolt   | Cypher Shell, drivers      |
 
 ---
 
@@ -246,26 +340,131 @@ CREATE TABLE users (id UUID PRIMARY KEY, name TEXT);
 
 ---
 
+### 🕸️ 6. Accessing Neo4j
+
+```bash
+# Open browser UI
+# Navigate to http://localhost:7474
+# Default credentials: neo4j / password123
+```
+
+```bash
+# Or use cypher-shell from container
+docker exec -it neo4j cypher-shell -u neo4j -p password123
+```
+
+```cypher
+// Example Cypher commands
+CREATE (p:Person {name: 'John', age: 30});
+CREATE (p:Person {name: 'Jane', age: 25});
+MATCH (a:Person {name: 'John'}), (b:Person {name: 'Jane'})
+CREATE (a)-[:KNOWS]->(b);
+MATCH (n) RETURN n;
+```
+
+---
+
+### 🐷 7. Accessing Pig
+
+```bash
+# Enter interactive Pig shell (Grunt)
+docker exec -it pig pig
+```
+
+```bash
+# Or run in local mode (no HDFS required)
+docker exec -it pig pig -x local
+```
+
+```pig
+-- Example Pig Latin commands
+data = LOAD '/test_input/data.txt' USING PigStorage(',') AS (id:int, name:chararray);
+filtered = FILTER data BY id > 10;
+grouped = GROUP filtered BY name;
+counts = FOREACH grouped GENERATE group, COUNT(filtered);
+DUMP counts;
+```
+
+> **📝 Note:** For HDFS mode, ensure Hadoop is running first. Use `-x local` for standalone testing.
+
+---
+
 ## 📝 Configuration Notes
 
-### 🔗 Integration
+### 🔗 Service Dependencies
 
-| Component | Storage Backend                     | Coordination           |
-| --------- | ----------------------------------- | ---------------------- |
-| HBase     | HDFS (`hdfs://namenode:9000/hbase`) | Zookeeper              |
-| Hive      | HDFS (`hdfs://namenode:9000`)       | PostgreSQL (Metastore) |
-| Spark     | HDFS (`hdfs://namenode:9000`)       | Standalone             |
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SERVICE DEPENDENCY MAP                   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  ┌───────────┐         ┌───────────┐                        │
+│  │  Hadoop   │◄────────│   Spark   │                        │
+│  │  (HDFS)   │         └───────────┘                        │
+│  └─────┬─────┘                                              │
+│        │               ┌───────────┐                        │
+│        ├───────────────│   Hive    │                        │
+│        │               └───────────┘                        │
+│        │                                                    │
+│        │  ┌───────────┐                                     │
+│        └──│   HBase   │◄────┐                               │
+│           └───────────┘     │                               │
+│                             │                               │
+│           ┌───────────┐     │                               │
+│           │ Zookeeper │─────┘                               │
+│           └───────────┘                                     │
+│                                                             │
+│  ┌───────────┐                                              │
+│  │ Cassandra │  (Standalone - no dependencies)              │
+│  └───────────┘                                              │
+│                                                             │
+│  ┌───────────┐                                              │
+│  │   Neo4j   │  (Standalone - no dependencies)              │
+│  └───────────┘                                              │
+│                                                             │
+│  ┌───────────┐         ┌───────────┐                        │
+│  │  Hadoop   │◄────────│    Pig    │                        │
+│  │  (HDFS)   │         └───────────┘                        │
+│  └───────────┘                                              │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 📊 Start Order by Use Case
+
+| Use Case            | Start Order                      |
+| :------------------ | :------------------------------- |
+| 🔥 **Spark Jobs**   | `hadoop` → `spark`               |
+| 🐝 **Hive Queries** | `hadoop` → `hive`                |
+| 📊 **HBase Tables** | `hadoop` → `zookeeper` → `hbase` |
+| 🔵 **Cassandra**    | `cassandra` (standalone)         |
+| 🕸️ **Neo4j Graphs** | `neo4j` (standalone)             |
+| 🐷 **Pig Scripts**  | `hadoop` → `pig`                 |
+| 🌐 **Full Stack**   | Root `docker-compose.yml`        |
+
+### 🔗 Integration Details
+
+| Component |           Storage Backend           |      Coordination      |
+| :-------: | :---------------------------------: | :--------------------: |
+|   HBase   | HDFS (`hdfs://namenode:9000/hbase`) |       Zookeeper        |
+|   Hive    |    HDFS (`hdfs://namenode:9000`)    | PostgreSQL (Metastore) |
+|   Spark   |    HDFS (`hdfs://namenode:9000`)    |       Standalone       |
 
 ### 🌐 Networking
 
-All containers communicate through the `bigdata-net` Docker bridge network.
+All services share the `bigdata-net` Docker bridge network. The network is created by the first service you start (Hadoop or Cassandra).
 
 ### 💾 Persistence
 
-| Volume          | Purpose                |
-| --------------- | ---------------------- |
-| `namenode_data` | HDFS NameNode metadata |
-| `datanode_data` | HDFS DataNode blocks   |
+|  Service  |        Volume        | Purpose                |
+| :-------: | :------------------: | :--------------------- |
+|  Hadoop   |   `namenode_data`    | HDFS NameNode metadata |
+|  Hadoop   |   `datanode_data`    | HDFS DataNode blocks   |
+| Zookeeper |   `zookeeper_data`   | ZK transaction logs    |
+|   Hive    | `hive_postgres_data` | Metastore database     |
+| Cassandra |   `cassandra_data`   | Cassandra data files   |
+|   Neo4j   |     `neo4j_data`     | Graph database files   |
+|    Pig    |    `pig_scripts`     | Pig Latin scripts      |
 
 > **⚠️ Warning:** Running `docker-compose down -v` will **delete all data** in these volumes!
 
@@ -332,6 +531,8 @@ docker logs hbase-master 2>&1 | grep -i "zookeeper"
 - 📖 [Apache Hive Documentation](https://cwiki.apache.org/confluence/display/Hive)
 - 📖 [Apache HBase Documentation](https://hbase.apache.org/book.html)
 - 📖 [Apache Cassandra Documentation](https://cassandra.apache.org/doc/latest/)
+- 📖 [Neo4j Documentation](https://neo4j.com/docs/)
+- 📖 [Apache Pig Documentation](https://pig.apache.org/docs/latest/)
 
 ---
 

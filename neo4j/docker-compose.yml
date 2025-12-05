@@ -1,0 +1,44 @@
+version: "3"
+
+# =============================================================================
+# NEO4J (Graph Database)
+# =============================================================================
+# Start with: docker-compose up -d
+# Stop with:  docker-compose down
+# Browser:    http://localhost:7474
+# Bolt:       bolt://localhost:7687
+#
+# ✅ STANDALONE - No dependencies required
+# Default credentials: neo4j / neo4j (will prompt to change on first login)
+# =============================================================================
+
+networks:
+  bigdata-net:
+    name: bigdata-net
+    driver: bridge
+
+services:
+  # ---------------------------------------------------------------------------
+  # NEO4J
+  # ---------------------------------------------------------------------------
+  neo4j:
+    image: neo4j:5.15-community
+    container_name: neo4j
+    restart: always
+    ports:
+      - "7474:7474" # HTTP Browser UI
+      - "7687:7687" # Bolt Protocol
+    environment:
+      - NEO4J_AUTH=neo4j/password123
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=1G
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    networks:
+      - bigdata-net
+
+volumes:
+  neo4j_data:
+  neo4j_logs:

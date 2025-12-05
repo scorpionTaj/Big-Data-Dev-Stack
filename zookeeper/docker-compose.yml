@@ -1,0 +1,38 @@
+version: "3"
+
+# =============================================================================
+# ZOOKEEPER (Coordination Service)
+# =============================================================================
+# Start with: docker-compose up -d
+# Stop with:  docker-compose down
+# Port:       2181
+# Required by: HBase, Kafka (if added)
+# =============================================================================
+
+networks:
+  bigdata-net:
+    name: bigdata-net
+    driver: bridge
+
+services:
+  # ---------------------------------------------------------------------------
+  # ZOOKEEPER
+  # ---------------------------------------------------------------------------
+  zookeeper:
+    image: zookeeper:3.5
+    container_name: zookeeper
+    restart: always
+    ports:
+      - "2181:2181"
+    environment:
+      - ZOO_MY_ID=1
+      - ZOO_SERVERS=server.1=zookeeper:2888:3888;2181
+    volumes:
+      - zookeeper_data:/data
+      - zookeeper_datalog:/datalog
+    networks:
+      - bigdata-net
+
+volumes:
+  zookeeper_data:
+  zookeeper_datalog:

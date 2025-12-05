@@ -1,0 +1,40 @@
+version: "3"
+
+# =============================================================================
+# APACHE CASSANDRA (NoSQL Wide-Column Database)
+# =============================================================================
+# Start with: docker-compose up -d
+# Stop with:  docker-compose down
+# CQL Port:   9042
+#
+# ✅ STANDALONE - No dependencies required
+# =============================================================================
+
+networks:
+  bigdata-net:
+    name: bigdata-net
+    driver: bridge
+
+services:
+  # ---------------------------------------------------------------------------
+  # CASSANDRA
+  # ---------------------------------------------------------------------------
+  cassandra:
+    image: cassandra:4.0
+    container_name: cassandra
+    restart: always
+    ports:
+      - "9042:9042" # CQL Native
+    environment:
+      - CASSANDRA_CLUSTER_NAME=DevCluster
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+      - MAX_HEAP_SIZE=512M
+      - HEAP_NEWSIZE=100M
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    networks:
+      - bigdata-net
+
+volumes:
+  cassandra_data:

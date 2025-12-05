@@ -1,0 +1,51 @@
+version: "3"
+
+# =============================================================================
+# APACHE HBASE (NoSQL Column Store)
+# =============================================================================
+# Start with: docker-compose up -d
+# Stop with:  docker-compose down
+# Master UI:  http://localhost:16010
+#
+# ⚠️  REQUIRES: Hadoop + Zookeeper (start them first!)
+# =============================================================================
+
+networks:
+  bigdata-net:
+    name: bigdata-net
+    external: true
+
+services:
+  # ---------------------------------------------------------------------------
+  # HBASE MASTER
+  # ---------------------------------------------------------------------------
+  hbase-master:
+    image: bde2020/hbase-master:1.0.0-hbase1.2.6
+    container_name: hbase-master
+    hostname: hbase-master
+    restart: always
+    ports:
+      - "16010:16010" # HBase Master UI
+    environment:
+      - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
+      - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
+      - HBASE_CONF_hbase_cluster_distributed=true
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # HBASE REGIONSERVER
+  # ---------------------------------------------------------------------------
+  hbase-regionserver:
+    image: bde2020/hbase-regionserver:1.0.0-hbase1.2.6
+    container_name: hbase-regionserver
+    hostname: hbase-regionserver
+    restart: always
+    environment:
+      - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
+      - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
+      - HBASE_CONF_hbase_cluster_distributed=true
+    depends_on:
+      - hbase-master
+    networks:
+      - bigdata-net

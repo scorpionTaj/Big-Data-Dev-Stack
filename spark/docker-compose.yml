@@ -1,0 +1,51 @@
+version: "3"
+
+# =============================================================================
+# APACHE SPARK (Distributed Processing)
+# =============================================================================
+# Start with: docker-compose up -d
+# Stop with:  docker-compose down
+# Master UI:  http://localhost:8080
+# Worker UI:  http://localhost:8081
+#
+# ⚠️  REQUIRES: Hadoop (start hadoop first for HDFS access)
+# =============================================================================
+
+networks:
+  bigdata-net:
+    name: bigdata-net
+    external: true
+
+services:
+  # ---------------------------------------------------------------------------
+  # SPARK MASTER
+  # ---------------------------------------------------------------------------
+  spark-master:
+    image: bde2020/spark-master:3.0.0-hadoop3.2
+    container_name: spark-master
+    restart: always
+    ports:
+      - "8080:8080" # Spark Master UI
+      - "7077:7077" # Spark Master Port
+    environment:
+      - INIT_DAEMON_STEP=setup_spark
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # SPARK WORKER
+  # ---------------------------------------------------------------------------
+  spark-worker:
+    image: bde2020/spark-worker:3.0.0-hadoop3.2
+    container_name: spark-worker
+    restart: always
+    ports:
+      - "8081:8081" # Spark Worker UI
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - spark-master
+    networks:
+      - bigdata-net
