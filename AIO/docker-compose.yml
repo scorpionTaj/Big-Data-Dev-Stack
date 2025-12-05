@@ -1,21 +1,10 @@
-# =============================================================================
-# 🐘 BIG DATA FULL STACK
-# =============================================================================
-# All services in one compose file
-# Start: docker-compose up -d
-# Stop:  docker-compose down
-#
-# ⚠️  REQUIRES: 10-12 GB RAM minimum
-# =============================================================================
-
 networks:
   bigdata-net:
-    name: bigdata-net
     driver: bridge
 
 services:
   # ---------------------------------------------------------------------------
-  # ZOOKEEPER (Required for HBase and generic coordination)
+  # ZOOKEEPER
   # ---------------------------------------------------------------------------
   zookeeper:
     image: zookeeper:3.5
@@ -30,15 +19,15 @@ services:
       - bigdata-net
 
   # ---------------------------------------------------------------------------
-  # HADOOP HDFS & YARN
+  # HADOOP HDFS (Storage)
   # ---------------------------------------------------------------------------
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
     restart: always
     ports:
-      - "9870:9870" # HDFS Browser UI
-      - "9000:9000" # HDFS internal
+      - "9870:9870"
+      - "9000:9000"
     volumes:
       - namenode_data:/hadoop/dfs/name
     environment:
@@ -62,7 +51,32 @@ services:
       - bigdata-net
 
   # ---------------------------------------------------------------------------
-  # HIVE (Warehousing)
+  # HADOOP YARN (MapReduce - REQUIRED FOR PIG)
+  # ---------------------------------------------------------------------------
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    restart: always
+    ports:
+      - "8088:8088"
+    environment:
+      - SERVICE_PRECONDITION=namenode:9000 namenode:9870 datanode:9864
+    networks:
+      - bigdata-net
+
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager
+    restart: always
+    environment:
+      - SERVICE_PRECONDITION=namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088
+    depends_on:
+      - resourcemanager
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # HIVE
   # ---------------------------------------------------------------------------
   hive-metastore-postgresql:
     image: postgres:9.6
@@ -98,8 +112,8 @@ services:
     container_name: hive-server
     restart: always
     ports:
-      - "10000:10000" # JDBC
-      - "10002:10002" # Web UI
+      - "10000:10000"
+      - "10002:10002"
     environment:
       - HIVE_CORE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
@@ -110,15 +124,15 @@ services:
       - bigdata-net
 
   # ---------------------------------------------------------------------------
-  # SPARK (Processing)
+  # SPARK
   # ---------------------------------------------------------------------------
   spark-master:
     image: bde2020/spark-master:3.0.0-hadoop3.2
     container_name: spark-master
     restart: always
     ports:
-      - "8080:8080" # Spark Master UI
-      - "7077:7077" # Spark Master Port
+      - "8080:8080"
+      - "7077:7077"
     environment:
       - INIT_DAEMON_STEP=setup_spark
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
@@ -132,7 +146,7 @@ services:
     container_name: spark-worker
     restart: always
     ports:
-      - "8081:8081" # Spark Worker UI
+      - "8081:8081"
     environment:
       - SPARK_MASTER=spark://spark-master:7077
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
@@ -142,7 +156,7 @@ services:
       - bigdata-net
 
   # ---------------------------------------------------------------------------
-  # HBASE (NoSQL Column Store)
+  # HBASE
   # ---------------------------------------------------------------------------
   hbase-master:
     image: bde2020/hbase-master:1.0.0-hbase1.2.6
@@ -150,7 +164,7 @@ services:
     hostname: hbase-master
     restart: always
     ports:
-      - "16010:16010" # HBase Master UI
+      - "16010:16010"
     environment:
       - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
       - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
@@ -176,14 +190,14 @@ services:
       - bigdata-net
 
   # ---------------------------------------------------------------------------
-  # CASSANDRA (NoSQL Wide-Column)
+  # CASSANDRA
   # ---------------------------------------------------------------------------
   cassandra:
     image: cassandra:4.0
     container_name: cassandra
     restart: always
     ports:
-      - "9042:9042" # CQL Native
+      - "9042:9042"
     environment:
       - CASSANDRA_CLUSTER_NAME=DevCluster
       - CASSANDRA_DC=datacenter1
@@ -196,15 +210,15 @@ services:
       - bigdata-net
 
   # ---------------------------------------------------------------------------
-  # NEO4J (Graph Database)
+  # NEO4J
   # ---------------------------------------------------------------------------
   neo4j:
     image: neo4j:5.15-community
     container_name: neo4j
     restart: always
     ports:
-      - "7474:7474" # HTTP Browser UI
-      - "7687:7687" # Bolt Protocol
+      - "7474:7474"
+      - "7687:7687"
     environment:
       - NEO4J_AUTH=neo4j/password123
       - NEO4J_PLUGINS=["apoc"]
@@ -217,24 +231,27 @@ services:
       - bigdata-net
 
   # ---------------------------------------------------------------------------
-  # PIG (Data Flow Scripting)
+  # PIG (Client Node)
   # ---------------------------------------------------------------------------
   pig:
     build:
       context: .
       dockerfile: pig.Dockerfile
-    image: bigdata-pig:0.17.0
     container_name: pig
     hostname: pig
     restart: always
     stdin_open: true
     tty: true
     environment:
-      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+      # These variables tell the base image how to configure the XML files
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - MAPRED_CONF_mapreduce_framework_name=yarn
     volumes:
       - pig_scripts:/pig/scripts
     depends_on:
       - namenode
+      - resourcemanager
     networks:
       - bigdata-net
 

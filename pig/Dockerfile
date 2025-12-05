@@ -1,35 +1,20 @@
-FROM eclipse-temurin:8-jdk
+FROM bde2020/hadoop-base:2.0.0-hadoop3.2.1-java8
 
-# Environment variables
-ENV HADOOP_VERSION=3.2.1
-ENV PIG_VERSION=0.17.0
-ENV HADOOP_HOME=/opt/hadoop
+RUN echo "deb http://archive.debian.org/debian stretch main" > /etc/apt/sources.list \
+    && echo "deb http://archive.debian.org/debian-security stretch/updates main" >> /etc/apt/sources.list \
+    && apt-get -o Acquire::Check-Valid-Until=false update \
+    && apt-get -o Acquire::Check-Valid-Until=false install -y wget \
+    && wget --no-check-certificate https://archive.apache.org/dist/pig/pig-0.17.0/pig-0.17.0.tar.gz \
+    && tar -xzf pig-0.17.0.tar.gz -C /opt \
+    && mv /opt/pig-0.17.0 /opt/pig \
+    && rm pig-0.17.0.tar.gz \
+    && mkdir -p /pig/scripts
+
+# Metadata
 ENV PIG_HOME=/opt/pig
-ENV PATH=$PATH:$HADOOP_HOME/bin:$PIG_HOME/bin
+ENV PATH=$PATH:$PIG_HOME/bin
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    && rm -rf /var/lib/apt/lists/*
-
-# Download and install Hadoop (client libraries only)
-RUN wget -q https://archive.apache.org/dist/hadoop/common/hadoop-${HADOOP_VERSION}/hadoop-${HADOOP_VERSION}.tar.gz \
-    && tar -xzf hadoop-${HADOOP_VERSION}.tar.gz \
-    && mv hadoop-${HADOOP_VERSION} ${HADOOP_HOME} \
-    && rm hadoop-${HADOOP_VERSION}.tar.gz
-
-# Download and install Pig
-RUN wget -q https://archive.apache.org/dist/pig/pig-${PIG_VERSION}/pig-${PIG_VERSION}.tar.gz \
-    && tar -xzf pig-${PIG_VERSION}.tar.gz \
-    && mv pig-${PIG_VERSION} ${PIG_HOME} \
-    && rm pig-${PIG_VERSION}.tar.gz
-
-# Create scripts directory
-RUN mkdir -p /pig/scripts
-
-# Set working directory
 WORKDIR /pig/scripts
 
-# Default command - keep container running
-CMD ["tail", "-f", "/dev/null"]
+# Keep container running
+CMD ["/bin/bash", "-c", "tail -f /dev/null"]

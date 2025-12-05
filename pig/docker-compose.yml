@@ -1,13 +1,9 @@
+version: "3"
+
 # =============================================================================
-# APACHE PIG (Data Flow Scripting)
+# APACHE PIG (Standalone Client)
 # =============================================================================
-# Start with: docker-compose up -d
-# Stop with:  docker-compose down
-#
-# ⚠️  REQUIRES: Hadoop (start hadoop first!)
-#
-# Usage: docker exec -it pig pig
-#        docker exec -it pig pig -x local  (local mode, no HDFS)
+# ⚠️  PREREQUISITE: The main Big Data cluster must be running on 'bigdata-net'
 # =============================================================================
 
 networks:
@@ -31,6 +27,14 @@ services:
     tty: true
     environment:
       - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+      # -----------------------------------------------------------------------
+      # CONFIGURATION INJECTION
+      # These variables tell the base image how to generate core-site.xml
+      # and yarn-site.xml so Pig can talk to the main cluster.
+      # -----------------------------------------------------------------------
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - MAPRED_CONF_mapreduce_framework_name=yarn
     volumes:
       - pig_scripts:/pig/scripts
     networks:
