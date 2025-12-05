@@ -7,12 +7,13 @@
   <img src="https://img.shields.io/badge/HBase-1.2.6-red?style=for-the-badge&logo=apache&logoColor=white" alt="HBase"/>
   <img src="https://img.shields.io/badge/Cassandra-4.0-blue?style=for-the-badge&logo=apache-cassandra&logoColor=white" alt="Cassandra"/>
   <img src="https://img.shields.io/badge/Neo4j-5.15-008CC1?style=for-the-badge&logo=neo4j&logoColor=white" alt="Neo4j"/>
+  <img src="https://img.shields.io/badge/Kafka-2.4.1-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white" alt="Kafka"/>
   <img src="https://img.shields.io/badge/Pig-0.17-pink?style=for-the-badge&logo=apache&logoColor=white" alt="Pig"/>
 </p>
 
 <p align="center">
   <strong>A modular Big Data ecosystem orchestrated with Docker Compose</strong><br>
-  <em>Start only what you need • Hadoop • Hive • HBase • Spark • Cassandra • Neo4j • Pig</em>
+  <em>Start only what you need • Hadoop • Hive • HBase • Spark • Kafka • Cassandra • Neo4j • Pig</em>
 </p>
 
 ---
@@ -74,6 +75,9 @@ BigData_Docker/
 ├── 📂 neo4j/                   # Graph Database
 │   └── docker-compose.yml
 │
+├── 📂 kafka/                   # Message Streaming
+│   └── docker-compose.yml
+│
 └── 📂 pig/                     # Data Flow Scripting
     ├── docker-compose.yml
     └── Dockerfile
@@ -96,6 +100,7 @@ Start only the services you need with minimal resources:
 |   📊 **HBase**   |   `cd hbase && docker-compose up -d`   | Hadoop + Zookeeper |  ~1 GB  |
 | 🔵 **Cassandra** | `cd cassandra && docker-compose up -d` | None (standalone)  |  ~1 GB  |
 |   🕸️ **Neo4j**   |   `cd neo4j && docker-compose up -d`   | None (standalone)  |  ~1 GB  |
+|   📨 **Kafka**   |   `cd kafka && docker-compose up -d`   |     Zookeeper      |  ~1 GB  |
 |    🐷 **Pig**    |    `cd pig && docker-compose up -d`    |       Hadoop       | ~512 MB |
 
 #### 📋 Example: Start Hadoop + Spark
@@ -247,6 +252,7 @@ docker-compose down -v
 |   🗂️ **HDFS**    | `9000`  |   RPC    | Hadoop clients             |
 |   ⚡ **Spark**   | `7077`  |   RPC    | spark-submit               |
 | 🦁 **Zookeeper** | `2181`  |   TCP    | ZK clients                 |
+|   📨 **Kafka**   | `9092`  |   TCP    | Kafka clients, producers   |
 |   🕸️ **Neo4j**   | `7687`  |   Bolt   | Cypher Shell, drivers      |
 
 ---
@@ -382,7 +388,7 @@ MATCH (n) RETURN n;
 
 ---
 
-### 🐷 7. Accessing Pig
+### 🐷 9. Accessing Pig
 
 ```bash
 # Enter interactive Pig shell (Grunt)
@@ -404,6 +410,31 @@ DUMP counts;
 ```
 
 > **📝 Note:** For HDFS mode, ensure Hadoop is running first. Use `-x local` for standalone testing.
+
+---
+
+### 📨 8. Accessing Kafka
+
+```bash
+# Enter the Kafka container
+docker exec -it kafka bash
+```
+
+```bash
+# Create a topic
+kafka-topics.sh --create --topic my-topic --bootstrap-server localhost:9093 --partitions 1 --replication-factor 1
+
+# List topics
+kafka-topics.sh --list --bootstrap-server localhost:9093
+
+# Produce messages
+kafka-console-producer.sh --topic my-topic --bootstrap-server localhost:9093
+
+# Consume messages (in another terminal)
+kafka-console-consumer.sh --topic my-topic --from-beginning --bootstrap-server localhost:9093
+```
+
+> **📝 Note:** Use port `9093` inside the container, `9092` from your host machine.
 
 ---
 
@@ -441,6 +472,10 @@ DUMP counts;
 │  └───────────┘                                              │
 │                                                             │
 │  ┌───────────┐         ┌───────────┐                        │
+│  │ Zookeeper │◄────────│   Kafka   │                        │
+│  └───────────┘         └───────────┘                        │
+│                                                             │
+│  ┌───────────┐         ┌───────────┐                        │
 │  │  Hadoop   │◄────────│    Pig    │                        │
 │  │  (HDFS)   │         └───────────┘                        │
 │  └───────────┘                                              │
@@ -450,15 +485,16 @@ DUMP counts;
 
 ### 📊 Start Order by Use Case
 
-| Use Case            | Start Order                      |
-| :------------------ | :------------------------------- |
-| 🔥 **Spark Jobs**   | `hadoop` → `spark`               |
-| 🐝 **Hive Queries** | `hadoop` → `hive`                |
-| 📊 **HBase Tables** | `hadoop` → `zookeeper` → `hbase` |
-| 🔵 **Cassandra**    | `cassandra` (standalone)         |
-| 🕸️ **Neo4j Graphs** | `neo4j` (standalone)             |
-| 🐷 **Pig Scripts**  | `hadoop` → `pig`                 |
-| 🌐 **Full Stack**   | Root `docker-compose.yml`        |
+| Use Case             | Start Order                      |
+| :------------------- | :------------------------------- |
+| 🔥 **Spark Jobs**    | `hadoop` → `spark`               |
+| 🐝 **Hive Queries**  | `hadoop` → `hive`                |
+| 📊 **HBase Tables**  | `hadoop` → `zookeeper` → `hbase` |
+| 🔵 **Cassandra**     | `cassandra` (standalone)         |
+| 🕸️ **Neo4j Graphs**  | `neo4j` (standalone)             |
+| 📨 **Kafka Streams** | `zookeeper` → `kafka`            |
+| 🐷 **Pig Scripts**   | `hadoop` → `pig`                 |
+| 🌐 **Full Stack**    | Root `docker-compose.yml`        |
 
 ### 🔗 Integration Details
 
@@ -550,6 +586,7 @@ docker logs hbase-master 2>&1 | grep -i "zookeeper"
 - 📖 [Apache HBase Documentation](https://hbase.apache.org/book.html)
 - 📖 [Apache Cassandra Documentation](https://cassandra.apache.org/doc/latest/)
 - 📖 [Neo4j Documentation](https://neo4j.com/docs/)
+- 📖 [Apache Kafka Documentation](https://kafka.apache.org/documentation/)
 - 📖 [Apache Pig Documentation](https://pig.apache.org/docs/latest/)
 
 ---
