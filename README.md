@@ -47,8 +47,11 @@
 
 ```
 BigData_Docker/
-├── 📄 docker-compose.yml      # Full stack (all services)
 ├── 📄 README.md
+│
+├── 📂 AIO/                     # 🚀 All-In-One (Full Stack)
+│   ├── docker-compose.yml
+│   └── pig.Dockerfile
 │
 ├── 📂 hadoop/                  # HDFS Cluster
 │   └── docker-compose.yml
@@ -72,7 +75,8 @@ BigData_Docker/
 │   └── docker-compose.yml
 │
 └── 📂 pig/                     # Data Flow Scripting
-    └── docker-compose.yml
+    ├── docker-compose.yml
+    └── Dockerfile
 ```
 
 ---
@@ -122,14 +126,28 @@ cd ../hbase && docker-compose up -d
 
 ---
 
-### 🌐 Option 2: Start Full Stack
+### 🌐 Option 2: All-In-One (Full Stack)
 
-Start all services at once (requires 10-12 GB RAM):
+Start **all services at once** using the `AIO` folder (requires 10-12 GB RAM):
 
 ```bash
-# From the root directory
-docker-compose up -d
+# Navigate to the AIO folder
+cd AIO
+
+# Build and start all services
+docker-compose up -d --build
 ```
+
+> **📦 What's included in AIO:**
+>
+> - Hadoop (NameNode + DataNode)
+> - Zookeeper
+> - Hive (Metastore + Server + PostgreSQL)
+> - Spark (Master + Worker)
+> - HBase (Master + RegionServer)
+> - Cassandra
+> - Neo4j
+> - Pig
 
 ⏳ Allow **2-3 minutes** for all services to initialize:
 
