@@ -1,0 +1,10 @@
+services:
+  flume:
+    build: .
+    container_name: flume
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    networks: [bigdata-net]
+networks:
+  bigdata-net:
+    external: true

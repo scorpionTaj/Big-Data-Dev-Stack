@@ -1,118 +1,129 @@
+version: "3"
+
 networks:
   bigdata-net:
     driver: bridge
 
 services:
-  # ---------------------------------------------------------------------------
-  # ZOOKEEPER (Required for HBase & Kafka)
-  # ---------------------------------------------------------------------------
+  # ===========================================================================
+  # CORE INFRASTRUCTURE (Coordination & Storage)
+  # ===========================================================================
+
+  # ZOOKEEPER: The "Coordinator"
+  # Used by HBase, Kafka, and High-Availability clusters to manage state.
   zookeeper:
     image: zookeeper:3.5
     container_name: zookeeper
     restart: always
-    ports:
-      - "2181:2181"
-    volumes:
-      - zookeeper_data:/data
-      - zookeeper_datalog:/datalog
-    networks:
-      - bigdata-net
+    ports: ["2181:2181"]
+    networks: [bigdata-net]
 
-  # ---------------------------------------------------------------------------
-  # KAFKA (Message Broker)
-  # ---------------------------------------------------------------------------
-  kafka:
-    image: wurstmeister/kafka:2.12-2.4.1
-    container_name: kafka
-    restart: always
-    ports:
-      - "9092:9092"
-    environment:
-      # Listeners: Port 9093 for internal Docker traffic, 9092 for localhost access
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9093,OUTSIDE://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
-      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "test-topic:1:1"
-    depends_on:
-      - zookeeper
-    networks:
-      - bigdata-net
-
-  # ---------------------------------------------------------------------------
-  # HADOOP HDFS (Storage)
-  # ---------------------------------------------------------------------------
+  # NAMENODE: HDFS Master
+  # Stores metadata about where files are stored across the cluster.
+  # UI: http://localhost:9870
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
     container_name: namenode
     restart: always
-    ports:
-      - "9870:9870"
-      - "9000:9000"
-    volumes:
-      - namenode_data:/hadoop/dfs/name
+    ports: ["9870:9870", "9000:9000"]
+    volumes: [namenode_data:/hadoop/dfs/name]
     environment:
       - CLUSTER_NAME=test
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    networks:
-      - bigdata-net
+    networks: [bigdata-net]
 
+  # DATANODE: HDFS Worker
+  # The actual storage node where data blocks are kept.
   datanode:
     image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
     container_name: datanode
     restart: always
-    volumes:
-      - datanode_data:/hadoop/dfs/data
+    volumes: [datanode_data:/hadoop/dfs/data]
     environment:
       - SERVICE_PRECONDITION=namenode:9870
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on:
-      - namenode
-    networks:
-      - bigdata-net
+    depends_on: [namenode]
+    networks: [bigdata-net]
 
-  # ---------------------------------------------------------------------------
-  # HADOOP YARN (MapReduce - REQUIRED FOR PIG)
-  # ---------------------------------------------------------------------------
+  # RESOURCEMANAGER: YARN Master
+  # Manages resources (CPU/RAM) for jobs (MapReduce, Spark, etc.).
+  # UI: http://localhost:8088
   resourcemanager:
     image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
     container_name: resourcemanager
     restart: always
-    ports:
-      - "8088:8088"
+    ports: ["8088:8088"]
     environment:
       - SERVICE_PRECONDITION=namenode:9000 namenode:9870 datanode:9864
-    networks:
-      - bigdata-net
+    networks: [bigdata-net]
 
+  # NODEMANAGER: YARN Worker
+  # Executes the actual tasks scheduled by the ResourceManager.
   nodemanager:
     image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
     container_name: nodemanager
     restart: always
     environment:
       - SERVICE_PRECONDITION=namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088
-    depends_on:
-      - resourcemanager
-    networks:
-      - bigdata-net
+    depends_on: [resourcemanager]
+    networks: [bigdata-net]
 
-  # ---------------------------------------------------------------------------
-  # HIVE
-  # ---------------------------------------------------------------------------
-  hive-metastore-postgresql:
-    image: postgres:9.6
-    container_name: hive-postgres
+  # ===========================================================================
+  # DATA INGESTION & MESSAGING
+  # ===========================================================================
+
+  # KAFKA: Message Broker
+  # Handles real-time data streaming.
+  # Ports: 9092 (External access), 9093 (Internal Docker access).
+  kafka:
+    image: wurstmeister/kafka:2.12-2.4.1
+    container_name: kafka
+    restart: always
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9093,OUTSIDE://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on: [zookeeper]
+    networks: [bigdata-net]
+
+  # FLUME: Log Ingestion
+  # Agent that moves logs/events into HDFS.
+  # (Reuses the 'pig' universal client image to save space).
+  flume:
+    build: ./pig
+    image: bigdata-universal-client
+    container_name: flume
+    hostname: flume
     restart: always
     environment:
-      - POSTGRES_DB=metastore
-      - POSTGRES_USER=hive
-      - POSTGRES_PASSWORD=hive
-    volumes:
-      - hive_postgres_data:/var/lib/postgresql/data
-    networks:
-      - bigdata-net
+      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on: [namenode]
+    networks: [bigdata-net]
 
+  # ===========================================================================
+  # SQL & WAREHOUSING (Hive)
+  # ===========================================================================
+
+  # HIVE SERVER: SQL Interface
+  # Allows you to query HDFS data using SQL (JDBC/ODBC).
+  # JDBC URL: jdbc:hive2://localhost:10000
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    restart: always
+    ports: ["10000:10000", "10002:10002"]
+    environment:
+      - HIVE_CORE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on: [namenode, hive-metastore]
+    networks: [bigdata-net]
+
+  # HIVE METASTORE: Schema Registry
+  # Stores table definitions (columns, types, locations).
   hive-metastore:
     image: bde2020/hive-metastore-postgresql:2.3.0
     container_name: hive-metastore
@@ -123,159 +134,159 @@ services:
       - HIVE_SITE_CONF_javax_jdo_option_ConnectionUserName=hive
       - HIVE_SITE_CONF_javax_jdo_option_ConnectionPassword=hive
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on:
-      - namenode
-      - hive-metastore-postgresql
-    networks:
-      - bigdata-net
+    depends_on: [namenode, hive-metastore-postgresql]
+    networks: [bigdata-net]
 
-  hive-server:
-    image: bde2020/hive:2.3.2-postgresql-metastore
-    container_name: hive-server
+  # POSTGRES: Metastore Database
+  # The actual database backend for Hive Metastore (stores schemas, not data).
+  hive-metastore-postgresql:
+    image: postgres:9.6
+    container_name: hive-postgres
     restart: always
-    ports:
-      - "10000:10000"
-      - "10002:10002"
     environment:
-      - HIVE_CORE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on:
-      - namenode
-      - hive-metastore
-    networks:
-      - bigdata-net
+      - POSTGRES_DB=metastore
+      - POSTGRES_USER=hive
+      - POSTGRES_PASSWORD=hive
+    networks: [bigdata-net]
 
-  # ---------------------------------------------------------------------------
-  # SPARK
-  # ---------------------------------------------------------------------------
+  # ===========================================================================
+  # DATA PROCESSING (Spark)
+  # ===========================================================================
+
+  # SPARK MASTER: Cluster Manager
+  # Manages Spark applications and schedules tasks on workers.
+  # UI: http://localhost:8080
   spark-master:
     image: bde2020/spark-master:3.0.0-hadoop3.2
     container_name: spark-master
     restart: always
-    ports:
-      - "8080:8080"
-      - "7077:7077"
+    ports: ["8080:8080", "7077:7077"]
     environment:
       - INIT_DAEMON_STEP=setup_spark
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on:
-      - namenode
-    networks:
-      - bigdata-net
+    depends_on: [namenode]
+    networks: [bigdata-net]
 
+  # SPARK WORKER: Processing Node
+  # Executes Spark tasks (RDDs/DataFrames) and reports to Master.
+  # UI: http://localhost:8081
   spark-worker:
     image: bde2020/spark-worker:3.0.0-hadoop3.2
     container_name: spark-worker
     restart: always
-    ports:
-      - "8081:8081"
+    ports: ["8081:8081"]
     environment:
       - SPARK_MASTER=spark://spark-master:7077
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on:
-      - spark-master
-    networks:
-      - bigdata-net
+    depends_on: [spark-master]
+    networks: [bigdata-net]
 
-  # ---------------------------------------------------------------------------
-  # HBASE
-  # ---------------------------------------------------------------------------
+  # ===========================================================================
+  # NoSQL DATABASES (HBase, Cassandra, Neo4j)
+  # ===========================================================================
+
+  # HBASE MASTER: Column-Store Master
+  # Coordinates the HBase cluster.
+  # UI: http://localhost:16010
   hbase-master:
     image: bde2020/hbase-master:1.0.0-hbase1.2.6
     container_name: hbase-master
-    hostname: hbase-master
-    restart: always
-    ports:
-      - "16010:16010"
+    ports: ["16010:16010"]
     environment:
       - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
       - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
       - HBASE_CONF_hbase_cluster_distributed=true
-    depends_on:
-      - namenode
-      - zookeeper
-    networks:
-      - bigdata-net
+    depends_on: [namenode, zookeeper]
+    networks: [bigdata-net]
 
+  # HBASE REGIONSERVER: Column-Store Worker
+  # Stores and manages the actual HBase data regions.
   hbase-regionserver:
     image: bde2020/hbase-regionserver:1.0.0-hbase1.2.6
     container_name: hbase-regionserver
-    hostname: hbase-regionserver
-    restart: always
     environment:
       - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
       - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
       - HBASE_CONF_hbase_cluster_distributed=true
-    depends_on:
-      - hbase-master
-    networks:
-      - bigdata-net
+    depends_on: [hbase-master]
+    networks: [bigdata-net]
 
-  # ---------------------------------------------------------------------------
-  # CASSANDRA
-  # ---------------------------------------------------------------------------
+  # CASSANDRA: Wide-Column Store
+  # Standalone NoSQL database for high-availability apps.
+  # Port: 9042 (CQL)
   cassandra:
     image: cassandra:4.0
     container_name: cassandra
     restart: always
-    ports:
-      - "9042:9042"
+    ports: ["9042:9042"]
     environment:
       - CASSANDRA_CLUSTER_NAME=DevCluster
       - CASSANDRA_DC=datacenter1
       - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
-      - MAX_HEAP_SIZE=512M
-      - HEAP_NEWSIZE=100M
-    volumes:
-      - cassandra_data:/var/lib/cassandra
-    networks:
-      - bigdata-net
+    networks: [bigdata-net]
 
-  # ---------------------------------------------------------------------------
-  # NEO4J
-  # ---------------------------------------------------------------------------
+  # NEO4J: Graph Database
+  # Stores data as nodes and relationships.
+  # UI: http://localhost:7474
   neo4j:
     image: neo4j:5.15-community
     container_name: neo4j
     restart: always
-    ports:
-      - "7474:7474"
-      - "7687:7687"
+    ports: ["7474:7474", "7687:7687"]
     environment:
       - NEO4J_AUTH=neo4j/password123
       - NEO4J_PLUGINS=["apoc"]
-      - NEO4J_dbms_memory_heap_initial__size=512m
-      - NEO4J_dbms_memory_heap_max__size=1G
-    volumes:
-      - neo4j_data:/data
-      - neo4j_logs:/logs
-    networks:
-      - bigdata-net
+    networks: [bigdata-net]
 
-  # ---------------------------------------------------------------------------
-  # PIG (Client Node)
-  # ---------------------------------------------------------------------------
+  # ===========================================================================
+  # CLIENTS & UI TOOLS
+  # ===========================================================================
+
+  # UNIVERSAL CLIENT: Pig + Sqoop + Flume
+  # A custom container with multiple CLI tools installed.
+  # Use: docker exec -it pig bash (to run pig or sqoop commands)
   pig:
-    build:
-      context: .
-      dockerfile: pig.Dockerfile
+    build: ./pig
+    image: bigdata-universal-client
     container_name: pig
     hostname: pig
-    restart: always
     stdin_open: true
     tty: true
     environment:
-      # These variables tell the base image how to configure the XML files
+      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
       - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
       - MAPRED_CONF_mapreduce_framework_name=yarn
-    volumes:
-      - pig_scripts:/pig/scripts
-    depends_on:
-      - namenode
-      - resourcemanager
-    networks:
-      - bigdata-net
+    depends_on: [namenode, resourcemanager, hive-postgres]
+    networks: [bigdata-net]
+
+  # OOZIE: Workflow Scheduler
+  # Schedules complex jobs (chains of Hive, Spark, etc.).
+  # UI: http://localhost:11000/oozie
+  oozie:
+    image: dvoros/oozie:4.3.0
+    container_name: oozie
+    ports: ["11000:11000"]
+    environment:
+      - OOZIE_CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on: [namenode, resourcemanager]
+    networks: [bigdata-net]
+
+  # HUE: Hadoop User Experience
+  # Web UI for browsing HDFS, Hive Editor, and Job Browser.
+  # UI: http://localhost:8888
+  hue:
+    image: gethue/hue:4.10.0
+    container_name: hue
+    ports: ["8888:8888"]
+    environment:
+      - HUE_NAMENODE_HOST=namenode
+      - HUE_HDFS_DEFAULT_FS=hdfs://namenode:9000
+      - HUE_RM_HOST=resourcemanager
+      - HUE_RM_PORT=8088
+    depends_on: [namenode, resourcemanager, hive-server]
+    networks: [bigdata-net]
 
 volumes:
   namenode_data:

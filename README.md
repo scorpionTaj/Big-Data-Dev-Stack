@@ -9,11 +9,15 @@
   <img src="https://img.shields.io/badge/Neo4j-5.15-008CC1?style=for-the-badge&logo=neo4j&logoColor=white" alt="Neo4j"/>
   <img src="https://img.shields.io/badge/Kafka-2.4.1-231F20?style=for-the-badge&logo=apache-kafka&logoColor=white" alt="Kafka"/>
   <img src="https://img.shields.io/badge/Pig-0.17-pink?style=for-the-badge&logo=apache&logoColor=white" alt="Pig"/>
+  <img src="https://img.shields.io/badge/Flume-1.9-lightblue?style=for-the-badge&logo=apache&logoColor=white" alt="Flume"/>
+  <img src="https://img.shields.io/badge/Oozie-4.3.0-purple?style=for-the-badge&logo=apache&logoColor=white" alt="Oozie"/>
+  <img src="https://img.shields.io/badge/Hue-4.10.0-cyan?style=for-the-badge&logo=cloudera&logoColor=white" alt="Hue"/>
+  <img src="https://img.shields.io/badge/Sqoop-1.4-brown?style=for-the-badge&logo=apache&logoColor=white" alt="Sqoop"/>
 </p>
 
 <p align="center">
   <strong>A modular Big Data ecosystem orchestrated with Docker Compose</strong><br>
-  <em>Start only what you need • Hadoop • Hive • HBase • Spark • Kafka • Cassandra • Neo4j • Pig</em>
+  <em>Start only what you need • Hadoop • Hive • HBase • Spark • Kafka • Cassandra • Neo4j • Pig • Flume • Oozie • Hue • Sqoop</em>
 </p>
 
 ---
@@ -78,7 +82,21 @@ BigData_Docker/
 ├── 📂 kafka/                   # Message Streaming
 │   └── docker-compose.yml
 │
-└── 📂 pig/                     # Data Flow Scripting
+├── 📂 pig/                     # Data Flow Scripting
+│   ├── docker-compose.yml
+│   └── Dockerfile
+│
+├── 📂 flume/                   # Log/Data Ingestion
+│   ├── docker-compose.yml
+│   └── Dockerfile
+│
+├── 📂 oozie/                   # Workflow Scheduler
+│   └── docker-compose.yml
+│
+├── 📂 hue/                     # Web UI for Hadoop
+│   └── docker-compose.yml
+│
+└── 📂 sqoop/                   # Data Transfer Tool
     ├── docker-compose.yml
     └── Dockerfile
 ```
@@ -102,6 +120,10 @@ Start only the services you need with minimal resources:
 |   🕸️ **Neo4j**   |   `cd neo4j && docker-compose up -d`   | None (standalone)  |  ~1 GB  |
 |   📨 **Kafka**   |   `cd kafka && docker-compose up -d`   |     Zookeeper      |  ~1 GB  |
 |    🐷 **Pig**    |    `cd pig && docker-compose up -d`    |       Hadoop       | ~512 MB |
+|   🌊 **Flume**   |   `cd flume && docker-compose up -d`   |       Hadoop       | ~512 MB |
+|   📅 **Oozie**   |   `cd oozie && docker-compose up -d`   |       Hadoop       |  ~1 GB  |
+|    🎨 **Hue**    |    `cd hue && docker-compose up -d`    |       Hadoop       |  ~1 GB  |
+|   🔄 **Sqoop**   |   `cd sqoop && docker-compose up -d`   |       Hadoop       | ~512 MB |
 
 #### 📋 Example: Start Hadoop + Spark
 
@@ -225,6 +247,19 @@ docker-compose down -v
 │  │  (Scripting) │                                               │
 │  └──────────────┘                                               │
 │                                                                  │
+│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │
+│  │    Flume     │     │    Oozie     │     │     Hue      │     │
+│  │  (Ingestion) │     │  (Workflow)  │     │   (Web UI)   │     │
+│  │              │     │   :11000     │     │    :8888     │     │
+│  └──────────────┘     └──────────────┘     └──────────────┘     │
+│         │                    │                    │              │
+│         └────────────────────┼────────────────────┘              │
+│                              ▼                                   │
+│                       ┌──────────────┐                          │
+│                       │    Sqoop     │────────► RDBMS           │
+│                       │  (Transfer)  │                          │
+│                       └──────────────┘                          │
+│                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -241,6 +276,8 @@ docker-compose down -v
 | ⚡ **Spark** |  Worker UI  |  [http://localhost:8081](http://localhost:8081)  | View worker details         |
 | 📊 **HBase** |  Master UI  | [http://localhost:16010](http://localhost:16010) | View HBase tables & regions |
 | 🕸️ **Neo4j** |   Browser   |  [http://localhost:7474](http://localhost:7474)  | Graph database browser      |
+| 📅 **Oozie** | Web Console | [http://localhost:11000](http://localhost:11000) | Workflow management         |
+|  🎨 **Hue**  |   Browser   |  [http://localhost:8888](http://localhost:8888)  | Hadoop Web UI               |
 
 ### 🔗 Connection Ports
 
@@ -254,6 +291,8 @@ docker-compose down -v
 | 🦁 **Zookeeper** | `2181`  |   TCP    | ZK clients                 |
 |   📨 **Kafka**   | `9092`  |   TCP    | Kafka clients, producers   |
 |   🕸️ **Neo4j**   | `7687`  |   Bolt   | Cypher Shell, drivers      |
+|   📅 **Oozie**   | `11000` |   HTTP   | REST API, Web UI           |
+|    🎨 **Hue**    | `8888`  |   HTTP   | Web browser                |
 
 ---
 
@@ -438,6 +477,100 @@ kafka-console-consumer.sh --topic my-topic --from-beginning --bootstrap-server l
 
 ---
 
+### 🌊 9. Accessing Flume
+
+```bash
+# Enter the Flume container
+docker exec -it flume bash
+```
+
+```bash
+# Flume is typically configured via agent configuration files
+# Example: Start an agent with a specific config
+flume-ng agent --conf conf --conf-file /path/to/flume.conf --name agent1 -Dflume.root.logger=INFO,console
+```
+
+> **📝 Note:** Flume requires configuration files for sources, channels, and sinks. Mount your config files when starting the container.
+
+---
+
+### 📅 10. Accessing Oozie
+
+```bash
+# Enter the Oozie container
+docker exec -it oozie bash
+```
+
+```bash
+# Check Oozie status
+oozie admin -status
+
+# Submit a workflow
+oozie job -oozie http://localhost:11000/oozie -config job.properties -run
+
+# Check job status
+oozie job -oozie http://localhost:11000/oozie -info <job-id>
+```
+
+```bash
+# Access Oozie Web UI
+# Navigate to http://localhost:11000/oozie
+```
+
+> **📝 Note:** Oozie requires workflow definitions (XML) and job properties files.
+
+---
+
+### 🎨 11. Accessing Hue
+
+```bash
+# Access Hue Web UI
+# Navigate to http://localhost:8888
+# Create admin account on first login
+```
+
+Hue provides a web interface for:
+
+- 📁 HDFS file browser
+- 🐝 Hive query editor
+- 📊 HBase browser
+- 📅 Oozie workflow editor
+- 📨 Kafka topics viewer
+
+> **📝 Note:** Configure Hue to connect to your Hadoop services via environment variables.
+
+---
+
+### 🔄 12. Accessing Sqoop
+
+```bash
+# Enter the Sqoop container
+docker exec -it sqoop bash
+```
+
+```bash
+# Import data from MySQL to HDFS
+sqoop import \
+  --connect jdbc:mysql://mysql-host:3306/database \
+  --username user --password pass \
+  --table tablename \
+  --target-dir /user/sqoop/tablename
+
+# Export data from HDFS to MySQL
+sqoop export \
+  --connect jdbc:mysql://mysql-host:3306/database \
+  --username user --password pass \
+  --table tablename \
+  --export-dir /user/sqoop/tablename
+
+# List databases
+sqoop list-databases --connect jdbc:mysql://mysql-host:3306/ --username user --password pass
+```
+
+> **📝 Note:** Sqoop requires JDBC drivers for the target database. Ensure Hadoop is running for HDFS operations.
+
+---
+
 ## 📝 Configuration Notes
 
 ### 🔗 Service Dependencies
@@ -480,21 +613,45 @@ kafka-console-consumer.sh --topic my-topic --from-beginning --bootstrap-server l
 │  │  (HDFS)   │         └───────────┘                        │
 │  └───────────┘                                              │
 │                                                             │
+│  ┌───────────┐         ┌───────────┐                        │
+│  │  Hadoop   │◄────────│   Flume   │                        │
+│  │  (HDFS)   │         └───────────┘                        │
+│  └───────────┘                                              │
+│                                                             │
+│  ┌───────────┐         ┌───────────┐                        │
+│  │  Hadoop   │◄────────│   Oozie   │                        │
+│  │  (HDFS)   │         └───────────┘                        │
+│  └───────────┘                                              │
+│                                                             │
+│  ┌───────────┐         ┌───────────┐                        │
+│  │  Hadoop   │◄────────│    Hue    │                        │
+│  │  (HDFS)   │         └───────────┘                        │
+│  └───────────┘                                              │
+│                                                             │
+│  ┌───────────┐         ┌───────────┐                        │
+│  │  Hadoop   │◄────────│   Sqoop   │ ────────► RDBMS        │
+│  │  (HDFS)   │         └───────────┘                        │
+│  └───────────┘                                              │
+│                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### 📊 Start Order by Use Case
 
-| Use Case             | Start Order                      |
-| :------------------- | :------------------------------- |
-| 🔥 **Spark Jobs**    | `hadoop` → `spark`               |
-| 🐝 **Hive Queries**  | `hadoop` → `hive`                |
-| 📊 **HBase Tables**  | `hadoop` → `zookeeper` → `hbase` |
-| 🔵 **Cassandra**     | `cassandra` (standalone)         |
-| 🕸️ **Neo4j Graphs**  | `neo4j` (standalone)             |
-| 📨 **Kafka Streams** | `zookeeper` → `kafka`            |
-| 🐷 **Pig Scripts**   | `hadoop` → `pig`                 |
-| 🌐 **Full Stack**    | Root `docker-compose.yml`        |
+| Use Case               | Start Order                      |
+| :--------------------- | :------------------------------- |
+| 🔥 **Spark Jobs**      | `hadoop` → `spark`               |
+| 🐝 **Hive Queries**    | `hadoop` → `hive`                |
+| 📊 **HBase Tables**    | `hadoop` → `zookeeper` → `hbase` |
+| 🔵 **Cassandra**       | `cassandra` (standalone)         |
+| 🕸️ **Neo4j Graphs**    | `neo4j` (standalone)             |
+| 📨 **Kafka Streams**   | `zookeeper` → `kafka`            |
+| 🐷 **Pig Scripts**     | `hadoop` → `pig`                 |
+| 🌊 **Flume Ingestion** | `hadoop` → `flume`               |
+| 📅 **Oozie Workflows** | `hadoop` → `oozie`               |
+| 🎨 **Hue Web UI**      | `hadoop` → `hue`                 |
+| 🔄 **Sqoop Transfer**  | `hadoop` → `sqoop`               |
+| 🌐 **Full Stack**      | Root `docker-compose.yml`        |
 
 ### 🔗 Integration Details
 
@@ -588,6 +745,10 @@ docker logs hbase-master 2>&1 | grep -i "zookeeper"
 - 📖 [Neo4j Documentation](https://neo4j.com/docs/)
 - 📖 [Apache Kafka Documentation](https://kafka.apache.org/documentation/)
 - 📖 [Apache Pig Documentation](https://pig.apache.org/docs/latest/)
+- 📖 [Apache Flume Documentation](https://flume.apache.org/documentation.html)
+- 📖 [Apache Oozie Documentation](https://oozie.apache.org/docs/)
+- 📖 [Hue Documentation](https://docs.gethue.com/)
+- 📖 [Apache Sqoop Documentation](https://sqoop.apache.org/docs/)
 
 ---
 

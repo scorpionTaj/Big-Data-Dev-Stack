@@ -1,0 +1,12 @@
+services:
+  oozie:
+    image: dvoros/oozie:4.3.0
+    container_name: oozie
+    ports: ["11000:11000"]
+    environment:
+      - OOZIE_CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    networks: [bigdata-net]
+networks:
+  bigdata-net:
+    external: true
