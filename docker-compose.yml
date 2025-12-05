@@ -1,0 +1,173 @@
+version: "3"
+
+networks:
+  bigdata-net:
+    driver: bridge
+
+services:
+  # ---------------------------------------------------------------------------
+  # ZOOKEEPER (Required for HBase and generic coordination)
+  # ---------------------------------------------------------------------------
+  zookeeper:
+    image: zookeeper:3.5
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # HADOOP HDFS & YARN
+  # ---------------------------------------------------------------------------
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    restart: always
+    ports:
+      - "9870:9870" # HDFS Browser UI
+      - "9000:9000" # HDFS internal
+    volumes:
+      - namenode_data:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    networks:
+      - bigdata-net
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode
+    restart: always
+    volumes:
+      - datanode_data:/hadoop/dfs/data
+    environment:
+      - SERVICE_PRECONDITION=namenode:9870
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - namenode
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # HIVE (Warehousing)
+  # ---------------------------------------------------------------------------
+  hive-metastore-postgresql:
+    image: postgres:9.6
+    container_name: hive-postgres
+    environment:
+      - POSTGRES_DB=metastore
+      - POSTGRES_USER=hive
+      - POSTGRES_PASSWORD=hive
+    networks:
+      - bigdata-net
+
+  hive-metastore:
+    image: bde2020/hive-metastore-postgresql:2.3.0
+    container_name: hive-metastore
+    environment:
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionDriverName=org.postgresql.Driver
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionUserName=hive
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionPassword=hive
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - namenode
+      - hive-metastore-postgresql
+    networks:
+      - bigdata-net
+
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    ports:
+      - "10000:10000" # JDBC
+      - "10002:10002" # Web UI
+    environment:
+      - HIVE_CORE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - namenode
+      - hive-metastore
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # SPARK (Processing)
+  # ---------------------------------------------------------------------------
+  spark-master:
+    image: bde2020/spark-master:3.0.0-hadoop3.2
+    container_name: spark-master
+    ports:
+      - "8080:8080" # Spark Master UI
+      - "7077:7077" # Spark Master Port
+    environment:
+      - INIT_DAEMON_STEP=setup_spark
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - namenode
+    networks:
+      - bigdata-net
+
+  spark-worker:
+    image: bde2020/spark-worker:3.0.0-hadoop3.2
+    container_name: spark-worker
+    ports:
+      - "8081:8081"
+    environment:
+      - "SPARK_MASTER=spark://spark-master:7077"
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    depends_on:
+      - spark-master
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # HBASE (NoSQL Column Store)
+  # ---------------------------------------------------------------------------
+  hbase-master:
+    image: bde2020/hbase-master:1.0.0-hbase1.2.6
+    container_name: hbase-master
+    hostname: hbase-master
+    ports:
+      - "16010:16010" # HBase Master UI
+    environment:
+      - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
+      - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
+      - HBASE_CONF_hbase_cluster_distributed=true
+    depends_on:
+      - namenode
+      - zookeeper
+    networks:
+      - bigdata-net
+
+  hbase-regionserver:
+    image: bde2020/hbase-regionserver:1.0.0-hbase1.2.6
+    container_name: hbase-regionserver
+    hostname: hbase-regionserver
+    environment:
+      - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
+      - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
+      - HBASE_CONF_hbase_cluster_distributed=true
+    depends_on:
+      - hbase-master
+    networks:
+      - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # CASSANDRA (NoSQL Wide-Column)
+  # ---------------------------------------------------------------------------
+  cassandra:
+    image: cassandra:4.0
+    container_name: cassandra
+    ports:
+      - "9042:9042" # CQL Native
+    environment:
+      - CASSANDRA_CLUSTER_NAME=DevCluster
+      - CASSANDRA_DC=datacenter1
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
+    networks:
+      - bigdata-net
+
+volumes:
+  namenode_data:
+  datanode_data:
