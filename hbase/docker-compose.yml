@@ -39,10 +39,15 @@ services:
     container_name: hbase-regionserver
     hostname: hbase-regionserver
     restart: always
+    ports:
+      - "16030:16030" # RegionServer UI
+      - "16020:16020" # RegionServer RPC
     environment:
       - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
       - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
       - HBASE_CONF_hbase_cluster_distributed=true
+      - HBASE_CONF_hbase_regionserver_hostname=hbase-regionserver
+      - HBASE_CONF_hbase_master_hostname=hbase-master
     depends_on:
       - hbase-master
     networks:
