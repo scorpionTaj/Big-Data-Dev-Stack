@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/kafka--connect-7.6.0-FF69B4?style=for-the-badge&logo=apache&logoColor=white" alt = "KKafka Connect"/>
   <img src="https://img.shields.io/badge/Jupyter-Lab-F37626?style=for-the-badge&logo=jupyter&logoColor=white" alt="Jupyter Lab"/>
   <img src="https://img.shields.io/badge/Hue-4.10.0-cyan?style=for-the-badge&logo=cloudera&logoColor=white" alt="Hue"/>
-  <img src="https://img.shields.io/badge/zookeeper-7.6.0-FF69B4?style=for-the-badge&logo=apache&logoColor=white" alt="Zookeeper"/>
+  <img src="https://img.shields.io/badge/zookeeper-7.6.0-8B4513?style=for-the-badge&logo=apache&logoColor=white" alt="Zookeeper"/>
 </p>
 
 <p align="center">
