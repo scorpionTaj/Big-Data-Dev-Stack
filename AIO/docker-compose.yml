@@ -315,7 +315,7 @@ services:
     networks: [bigdata-net]
 
   airflow-init:
-    image: apache/airflow:3.0.0
+    image: apache/airflow:2.11.0
     container_name: airflow-init
     command: version
     environment:
@@ -330,7 +330,7 @@ services:
     networks: [bigdata-net]
 
   airflow-webserver:
-    image: apache/airflow:3.0.0
+    image: apache/airflow:2.11.0
     container_name: airflow-webserver
     restart: always
     command: webserver
@@ -349,7 +349,7 @@ services:
     networks: [bigdata-net]
 
   airflow-scheduler:
-    image: apache/airflow:3.0.0
+    image: apache/airflow:2.11.0
     container_name: airflow-scheduler
     restart: always
     command: scheduler
