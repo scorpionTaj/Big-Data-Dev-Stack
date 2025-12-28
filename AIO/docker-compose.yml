@@ -183,8 +183,9 @@ services:
   # Manages Spark applications and schedules tasks on workers.
   # UI: http://localhost:8080
   spark-master:
-    image: apache/spark:3.5.0
+    image: jupyter/pyspark-notebook:spark-3.5.0
     container_name: spark-master
+    user: root
     # Custom command to launch the master class in foreground
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     ports: ["8080:8080", "7077:7077"]
@@ -194,12 +195,16 @@ services:
   # Executes Spark tasks (RDDs/DataFrames) and reports to Master.
   # UI: http://localhost:8081
   spark-worker:
-    image: apache/spark:3.5.0
+    image: jupyter/pyspark-notebook:spark-3.5.0
     container_name: spark-worker
-    # Custom command to launch worker and connect to master
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    user: root
+    # Manually launch the Worker class and connect to Master
+    command: /usr/local/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     ports: ["8081:8081"]
     depends_on: [spark-master]
+    environment:
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1G
     networks: [bigdata-net]
 
   # JUPYTER LAB: Replaces "spark-client"
