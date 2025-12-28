@@ -4,6 +4,7 @@
 # Start with: docker-compose up -d
 # Stop with:  docker-compose down
 # Web UI:     http://localhost:8090
+# Default credentials: admin
 #
 # ⚠️  REQUIRES: Hive Metastore (start hive first!)
 # =============================================================================

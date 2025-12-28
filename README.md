@@ -272,7 +272,7 @@ docker-compose down -v
 ### 🌐 Web Interfaces
 
 |       Service        |    Component     |                       URL                        | Description                             |
-| :------------------: | :--------------: | :----------------------------------------------: | :-------------------------------------- | --- | ------------ | ------ | ---------------------------------------------- | --------------------------- |
+| :------------------: | :--------------: | :----------------------------------------------: | :-------------------------------------- |
 |     🗂️ **HDFS**      |   NameNode UI    |  [http://localhost:9870](http://localhost:9870)  | View HDFS storage & blocks              |
 | 🐝 **YARN Manager**  | Resource Manager |  [http://localhost:8088](http://localhost:8088)  | View running jobs & resources           |
 | ⚡ **Spark Master**  |    Master UI     |  [http://localhost:8080](http://localhost:8080)  | View Spark cluster status               |
@@ -282,7 +282,8 @@ docker-compose down -v
 |     🕸️ **Neo4j**     |     Browser      |  [http://localhost:7474](http://localhost:7474)  | Graph database browser                  |
 | 📅 **Kafka Connect** |     REST API     |  [http://localhost:8083](http://localhost:8083)  | Kafka Connect API                       |
 |  📓 **JupyterLab**   |      Lab UI      |  [http://localhost:8888](http://localhost:8888)  | Main IDE (Write Python/Spark code here) |
-|      🎨 **Hue**      |     Browser      |  [http://localhost:8889](http://localhost:8889)  | Cluster UI (Browse HDFS, SQL Editor)    |     | 🚀 **Trino** | Web UI | [http://localhost:8090](http://localhost:8090) | Unified SQL query interface |
+|      🎨 **Hue**      |     Browser      |  [http://localhost:8889](http://localhost:8889)  | Cluster UI (Browse HDFS, SQL Editor)    |
+|     🚀 **Trino**     |      Web UI      |  [http://localhost:8090](http://localhost:8090)  | Unified SQL query interface             |
 |    🌬️ **Airflow**    |      Web UI      |  [http://localhost:8085](http://localhost:8085)  | Workflow orchestration (admin/admin)    |
 
 ### 🔗 Connection Ports
