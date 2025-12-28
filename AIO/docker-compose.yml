@@ -315,8 +315,8 @@ services:
     networks: [bigdata-net]
 
   airflow-init:
-    build: . # <--- USES YOUR DOCKERFILE
-    image: my-custom-airflow:2.10 # <--- Names the image
+    build: .
+    image: my-custom-airflow:2.10
     container_name: airflow-init
     command: version
     environment:
@@ -331,8 +331,8 @@ services:
     networks: [bigdata-net]
 
   airflow-webserver:
-    build: . # <--- USES YOUR DOCKERFILE
-    image: my-custom-airflow:2.10 # <--- Reuses the built image
+    build: .
+    image: my-custom-airflow:2.10
     container_name: airflow-webserver
     restart: always
     command: webserver

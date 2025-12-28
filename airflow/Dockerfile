@@ -1,10 +1,8 @@
 # Dockerfile
 FROM apache/airflow:2.11.0
 
-# Switch to root to install system dependencies
+# Switch to root to install system dependencies (if needed, usually not for pure python)
 USER airflow
-# Ensure pip installs to the user directory
-ENV PATH="/home/airflow/.local/bin:${PATH}"
 
 # Install the Spark and Trino providers once, permanently
 RUN pip install --no-cache-dir \

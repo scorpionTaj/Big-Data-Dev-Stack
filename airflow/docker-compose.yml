@@ -27,7 +27,8 @@ services:
     networks: [bigdata-net]
 
   airflow-init:
-    image: apache/airflow:2.11.0
+    build: . # <--- USES YOUR DOCKERFILE
+    image: my-custom-airflow:2.10 # <--- Names the image
     container_name: airflow-init
     command: version
     environment:
@@ -42,7 +43,8 @@ services:
     networks: [bigdata-net]
 
   airflow-webserver:
-    image: apache/airflow:2.11.0
+    build: . # <--- USES YOUR DOCKERFILE
+    image: my-custom-airflow:2.10 # <--- Reuses the built image
     container_name: airflow-webserver
     restart: always
     command: webserver
@@ -52,7 +54,7 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
-      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-apache-spark apache-airflow-providers-trino
+      # Note: _PIP_ADDITIONAL_REQUIREMENTS is REMOVED because it's built-in now!
     depends_on:
       postgres-airflow:
         condition: service_healthy
@@ -61,7 +63,8 @@ services:
     networks: [bigdata-net]
 
   airflow-scheduler:
-    image: apache/airflow:2.11.0
+    build: . # <--- USES YOUR DOCKERFILE
+    image: my-custom-airflow:2.10 # <--- Reuses the built image
     container_name: airflow-scheduler
     restart: always
     command: scheduler
@@ -69,7 +72,6 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
-      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-apache-spark apache-airflow-providers-trino
     depends_on:
       postgres-airflow:
         condition: service_healthy
