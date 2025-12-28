@@ -2,12 +2,13 @@ services:
   hue:
     image: gethue/hue:4.10.0
     container_name: hue
-    ports: ["8888:8888"]
+    ports: ["8889:8888"]
     environment:
       - HUE_NAMENODE_HOST=namenode
       - HUE_HDFS_DEFAULT_FS=hdfs://namenode:9000
       - HUE_RM_HOST=resourcemanager
       - HUE_RM_PORT=8088
+    depends_on: [namenode, resourcemanager, hive-server]
     networks: [bigdata-net]
 networks:
   bigdata-net:

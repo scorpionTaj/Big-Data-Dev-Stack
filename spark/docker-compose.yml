@@ -19,15 +19,15 @@ services:
   # SPARK MASTER
   # ---------------------------------------------------------------------------
   spark-master:
-    image: bde2020/spark-master:3.0.0-hadoop3.2
+    image: jupyter/pyspark-notebook:spark-3.5.0
     container_name: spark-master
-    restart: always
+    user: root
+    command: /usr/local/spark/bin/spark-class org.apache.spark.deploy.master.Master
     ports:
       - "8080:8080" # Spark Master UI
       - "7077:7077" # Spark Master Port
-    environment:
-      - INIT_DAEMON_STEP=setup_spark
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    healthcheck:
+      disable: true
     networks:
       - bigdata-net
 
@@ -35,15 +35,18 @@ services:
   # SPARK WORKER
   # ---------------------------------------------------------------------------
   spark-worker:
-    image: bde2020/spark-worker:3.0.0-hadoop3.2
+    image: jupyter/pyspark-notebook:spark-3.5.0
     container_name: spark-worker
-    restart: always
+    user: root
+    command: /usr/local/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     ports:
       - "8081:8081" # Spark Worker UI
-    environment:
-      - SPARK_MASTER=spark://spark-master:7077
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    healthcheck:
+      disable: true
     depends_on:
       - spark-master
+    environment:
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1G
     networks:
       - bigdata-net

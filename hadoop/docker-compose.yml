@@ -16,16 +16,18 @@ services:
   # HADOOP NAMENODE (Master)
   # ---------------------------------------------------------------------------
   namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    image: apache/hadoop:3
     container_name: namenode
+    hostname: namenode
     restart: always
+    command: ["hdfs", "namenode"]
     ports:
       - "9870:9870" # HDFS Browser UI
       - "9000:9000" # HDFS RPC
     volumes:
       - namenode_data:/hadoop/dfs/name
     environment:
-      - CLUSTER_NAME=test
+      - HDFS_CONF_dfs_namenode_name_dir=file:///hadoop/dfs/name
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     networks:
       - bigdata-net
@@ -34,18 +36,44 @@ services:
   # HADOOP DATANODE (Worker)
   # ---------------------------------------------------------------------------
   datanode:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    image: apache/hadoop:3
     container_name: datanode
     restart: always
+    command: ["hdfs", "datanode"]
+    environment:
+      - HDFS_CONF_dfs_datanode_data_dir=file:///hadoop/dfs/data
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     volumes:
       - datanode_data:/hadoop/dfs/data
-    environment:
-      - SERVICE_PRECONDITION=namenode:9870
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on:
-      - namenode
     networks:
       - bigdata-net
+
+  # ---------------------------------------------------------------------------
+  # RESOURCEMANAGER: YARN Master
+  # ---------------------------------------------------------------------------
+  resourcemanager:
+    image: apache/hadoop:3
+    container_name: resourcemanager
+    restart: always
+    command: ["yarn", "resourcemanager"]
+    ports: ["8088:8088"]
+    environment:
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    networks: [bigdata-net]
+
+  # ---------------------------------------------------------------------------
+  # NODEMANAGER: YARN Worker
+  # ---------------------------------------------------------------------------
+  nodemanager:
+    image: apache/hadoop:3
+    container_name: nodemanager
+    restart: always
+    command: ["yarn", "nodemanager"]
+    environment:
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    networks: [bigdata-net]
 
 volumes:
   namenode_data:

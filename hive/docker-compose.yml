@@ -18,8 +18,8 @@ services:
   # ---------------------------------------------------------------------------
   # POSTGRESQL (Hive Metastore Database)
   # ---------------------------------------------------------------------------
-  hive-metastore-postgresql:
-    image: postgres:9.6
+  hive-postgres:
+    image: postgres:13
     container_name: hive-postgres
     restart: always
     environment:
@@ -35,17 +35,19 @@ services:
   # HIVE METASTORE
   # ---------------------------------------------------------------------------
   hive-metastore:
-    image: bde2020/hive-metastore-postgresql:2.3.0
+    image: apache/hive:3.1.3
     container_name: hive-metastore
     restart: always
     environment:
-      - HIVE_SITE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
-      - HIVE_SITE_CONF_javax_jdo_option_ConnectionDriverName=org.postgresql.Driver
-      - HIVE_SITE_CONF_javax_jdo_option_ConnectionUserName=hive
-      - HIVE_SITE_CONF_javax_jdo_option_ConnectionPassword=hive
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - SERVICE_NAME=metastore
+      - HIVE_DB_EXTERNAL=true
+      - HIVE_DB_HOST=hive-postgres
+      - HIVE_DB_PORT=5432
+      - HIVE_DB_NAME=metastore
+      - HIVE_DB_USER=hive
+      - HIVE_DB_PASSWORD=hive
     depends_on:
-      - hive-metastore-postgresql
+      - hive-postgres
     networks:
       - bigdata-net
 
@@ -53,16 +55,22 @@ services:
   # HIVE SERVER
   # ---------------------------------------------------------------------------
   hive-server:
-    image: bde2020/hive:2.3.2-postgresql-metastore
+    image: apache/hive:3.1.3
     container_name: hive-server
     restart: always
     ports:
       - "10000:10000" # JDBC
       - "10002:10002" # Web UI
     environment:
-      - HIVE_CORE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - SERVICE_NAME=hiveserver2
+      - HIVE_DB_EXTERNAL=true
+      - HIVE_DB_HOST=hive-postgres
+      - HIVE_DB_PORT=5432
+      - HIVE_DB_NAME=metastore
+      - HIVE_DB_USER=hive
+      - HIVE_DB_PASSWORD=hive
     depends_on:
+      - namenode
       - hive-metastore
     networks:
       - bigdata-net

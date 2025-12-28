@@ -1,36 +1,32 @@
 # =============================================================================
-# ZOOKEEPER (Coordination Service)
+# JUPYTER LAB (Interactive Notebook)
 # =============================================================================
 # Start with: docker-compose up -d
 # Stop with:  docker-compose down
-# Port:       2181
-# Required by: HBase, Kafka (if added)
+# UI:         http://localhost:8888
+#
+# ⚠️  REQUIRES: Spark (start spark first!)
 # =============================================================================
 
 networks:
   bigdata-net:
     name: bigdata-net
-    driver: bridge
+    external: true
 
 services:
   # ---------------------------------------------------------------------------
-  # ZOOKEEPER
+  # JUPYTER LAB
   # ---------------------------------------------------------------------------
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    container_name: zookeeper
+  jupyter:
+    image: jupyter/pyspark-notebook:spark-3.5.0
+    container_name: jupyter
     restart: always
-    ports:
-      - "2181:2181"
+    ports: ["8888:8888"]
     environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - JUPYTER_ENABLE_LAB=yes
     volumes:
-      - zookeeper_data:/data
-      - zookeeper_datalog:/datalog
+      - ./notebooks:/home/jovyan/work
+    depends_on: [spark-master]
     networks:
       - bigdata-net
-
-volumes:
-  zookeeper_data:
-  zookeeper_datalog:

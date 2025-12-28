@@ -189,6 +189,8 @@ services:
     # 👇 NOTICE THE PATH CHANGE: /usr/local/spark (NOT /opt/spark)
     command: /usr/local/spark/bin/spark-class org.apache.spark.deploy.master.Master
     ports: ["8080:8080", "7077:7077"]
+    healthcheck:
+      disable: true
     networks: [bigdata-net]
 
   # SPARK WORKER: Processing Node
@@ -201,6 +203,8 @@ services:
     # 👇 NOTICE THE PATH CHANGE: /usr/local/spark (NOT /opt/spark)
     command: /usr/local/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     ports: ["8081:8081"]
+    healthcheck:
+      disable: true
     depends_on: [spark-master]
     environment:
       - SPARK_WORKER_CORES=1
@@ -217,7 +221,7 @@ services:
       - SPARK_MASTER_URL=spark://spark-master:7077
       - JUPYTER_ENABLE_LAB=yes
     volumes:
-      - ./notebooks:/home/scorpiontaj/work
+      - ./notebooks:/home/jovyan/work
     networks: [bigdata-net]
 
   # ===========================================================================

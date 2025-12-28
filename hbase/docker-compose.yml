@@ -18,16 +18,14 @@ services:
   # HBASE MASTER
   # ---------------------------------------------------------------------------
   hbase-master:
-    image: bde2020/hbase-master:1.0.0-hbase1.2.6
+    image: harisekhon/hbase:2.1
     container_name: hbase-master
-    hostname: hbase-master
-    restart: always
-    ports:
-      - "16010:16010" # HBase Master UI
+    ports: ["16010:16010"]
     environment:
+      - HBASE_MANAGES_ZK=false
       - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
       - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
-      - HBASE_CONF_hbase_cluster_distributed=true
+    depends_on: [namenode, zookeeper]
     networks:
       - bigdata-net
 
@@ -35,20 +33,12 @@ services:
   # HBASE REGIONSERVER
   # ---------------------------------------------------------------------------
   hbase-regionserver:
-    image: bde2020/hbase-regionserver:1.0.0-hbase1.2.6
+    image: harisekhon/hbase:2.1
     container_name: hbase-regionserver
-    hostname: hbase-regionserver
-    restart: always
-    ports:
-      - "16030:16030" # RegionServer UI
-      - "16020:16020" # RegionServer RPC
     environment:
+      - HBASE_MANAGES_ZK=false
       - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
       - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
-      - HBASE_CONF_hbase_cluster_distributed=true
-      - HBASE_CONF_hbase_regionserver_hostname=hbase-regionserver
-      - HBASE_CONF_hbase_master_hostname=hbase-master
-    depends_on:
-      - hbase-master
+    depends_on: [hbase-master]
     networks:
       - bigdata-net
