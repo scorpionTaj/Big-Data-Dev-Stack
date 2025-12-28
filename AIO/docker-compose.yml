@@ -186,8 +186,8 @@ services:
     image: jupyter/pyspark-notebook:spark-3.5.0
     container_name: spark-master
     user: root
-    # Custom command to launch the master class in foreground
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    # 👇 NOTICE THE PATH CHANGE: /usr/local/spark (NOT /opt/spark)
+    command: /usr/local/spark/bin/spark-class org.apache.spark.deploy.master.Master
     ports: ["8080:8080", "7077:7077"]
     networks: [bigdata-net]
 
@@ -198,7 +198,7 @@ services:
     image: jupyter/pyspark-notebook:spark-3.5.0
     container_name: spark-worker
     user: root
-    # Manually launch the Worker class and connect to Master
+    # 👇 NOTICE THE PATH CHANGE: /usr/local/spark (NOT /opt/spark)
     command: /usr/local/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     ports: ["8081:8081"]
     depends_on: [spark-master]
