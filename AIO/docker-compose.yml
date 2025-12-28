@@ -212,7 +212,7 @@ services:
       - SPARK_MASTER_URL=spark://spark-master:7077
       - JUPYTER_ENABLE_LAB=yes
     volumes:
-      - ./notebooks:/home/jovyan/work
+      - ./notebooks:/home/scorpiontaj/work
     networks: [bigdata-net]
 
   # ===========================================================================
