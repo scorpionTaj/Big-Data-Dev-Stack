@@ -373,6 +373,8 @@ services:
     container_name: trino
     ports: ["8090:8080"]
     networks: [bigdata-net]
+    volumes:
+      - ./trino-catalog:/etc/trino/catalog
     # Auto-connect to Hive Metastore
     command: >
       sh -c "mkdir -p /etc/trino/catalog &&
