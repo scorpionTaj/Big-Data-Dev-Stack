@@ -254,16 +254,18 @@ docker-compose down -v
 
 ### 🌐 Web Interfaces
 
-|       Service        |  Component  |                       URL                        | Description                 |
-| :------------------: | :---------: | :----------------------------------------------: | :-------------------------- |
-|     🗂️ **HDFS**      | NameNode UI |  [http://localhost:9870](http://localhost:9870)  | Browse the file system      |
-|     ⚡ **Spark**     |  Master UI  |  [http://localhost:8080](http://localhost:8080)  | View Spark jobs & workers   |
-|     ⚡ **Spark**     |  Worker UI  |  [http://localhost:8081](http://localhost:8081)  | View worker details         |
-|     📊 **HBase**     |  Master UI  | [http://localhost:16010](http://localhost:16010) | View HBase tables & regions |
-|     🕸️ **Neo4j**     |   Browser   |  [http://localhost:7474](http://localhost:7474)  | Graph database browser      |
-| 📅 **Kafka Connect** |  REST API   |  [http://localhost:8083](http://localhost:8083)  | Kafka Connect API           |
-|    📓 **Jupyter**    |   Lab UI    |  [http://localhost:8888](http://localhost:8888)  | Interactive notebooks       |
-|      🎨 **Hue**      |   Browser   |  [http://localhost:8889](http://localhost:8889)  | Hadoop Web UI               |
+|       Service        |    Component     |                       URL                        | Description                             |
+| :------------------: | :--------------: | :----------------------------------------------: | :-------------------------------------- |
+|     🗂️ **HDFS**      |   NameNode UI    |  [http://localhost:9870](http://localhost:9870)  | View HDFS storage & blocks              |
+| 🐝 **YARN Manager**  | Resource Manager |  [http://localhost:8088](http://localhost:8088)  | View running jobs & resources           |
+| ⚡ **Spark Master**  |    Master UI     |  [http://localhost:8080](http://localhost:8080)  | View Spark cluster status               |
+| ⚡ **Spark Worker**  |    Worker UI     |  [http://localhost:8081](http://localhost:8081)  | View specific worker logs               |
+|     🐝 **Hive**      |      Web UI      | [http://localhost:10002](http://localhost:10002) | Hive query interface                    |
+|   **HBase Master**   | HBase Master UI  | [http://localhost:16010](http://localhost:16010) | View HBase tables & regions             |
+|     🕸️ **Neo4j**     |     Browser      |  [http://localhost:7474](http://localhost:7474)  | Graph database browser                  |
+| 📅 **Kafka Connect** |     REST API     |  [http://localhost:8083](http://localhost:8083)  | Kafka Connect API                       |
+|  📓 **JupyterLab**   |      Lab UI      |  [http://localhost:8888](http://localhost:8888)  | Main IDE (Write Python/Spark code here) |
+|      🎨 **Hue**      |     Browser      |  [http://localhost:8889](http://localhost:8889)  | Cluster UI (Browse HDFS, SQL Editor)    |
 
 ### 🔗 Connection Ports
 
@@ -273,6 +275,7 @@ docker-compose down -v
 |     🐝 **Hive**      | `10002` |   HTTP   | Web UI                     |
 |   🔵 **Cassandra**   | `9042`  |   CQL    | cqlsh, drivers             |
 |     🗂️ **HDFS**      | `9000`  |   RPC    | Hadoop clients             |
+|     🐝 **YARN**      | `8088`  |   HTTP   | ResourceManager Web UI     |
 |     ⚡ **Spark**     | `7077`  |   RPC    | spark-submit               |
 |   🦁 **Zookeeper**   | `2181`  |   TCP    | ZK clients                 |
 |     📨 **Kafka**     | `9092`  |   TCP    | Kafka clients, producers   |
@@ -537,9 +540,9 @@ Hue provides a web interface for:
 │  │ Zookeeper │◄────────│   Kafka   │◄────┐                  │
 │  └───────────┘         └───────────┘     │                  │
 │                                          │                  │
-│  ┌───────────┐         ┌───────────┐     │                  │
+│  ┌───────────┐         ┌────────────┐    │                  │
 │  │   Kafka   │◄────────│KafkaConnect│    │                  │
-│  └───────────┘         └───────────┘     │                  │
+│  └───────────┘         └────────────┘    │                  │
 │                                          │                  │
 │  ┌───────────┐         ┌───────────┐     │                  │
 │  │   Spark   │◄────────│  Jupyter  │◄────┘                  │
