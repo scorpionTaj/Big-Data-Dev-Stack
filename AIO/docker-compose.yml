@@ -216,6 +216,7 @@ services:
   jupyter:
     image: jupyter/pyspark-notebook:spark-3.5.0
     container_name: jupyter
+    user: root
     ports: ["8888:8888"]
     environment:
       - SPARK_MASTER_URL=spark://spark-master:7077
