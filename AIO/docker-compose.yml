@@ -272,21 +272,6 @@ services:
       - NEO4J_PLUGINS=["apoc"]
     networks: [bigdata-net]
 
-  # ===========================================================================
-  # CLIENTS & UI TOOLS
-  # ===========================================================================
-
-  # SPARK-CLIENT (Replaces Pig/Sqoop)
-  # This container sits idle; use it to submit jobs or run spark-shell
-  # Command: docker exec -it spark-client bash
-  spark-client:
-    image: bitnami/spark:3.5.0
-    container_name: spark-client
-    command: tail -f /dev/null
-    environment:
-      - SPARK_MASTER_URL=spark://spark-master:7077
-    networks: [bigdata-net]
-
   # OOZIE: Dropping Oozie is recommended in modern stacks
 
   # HUE: Hadoop User Experience
