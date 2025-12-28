@@ -414,7 +414,7 @@ MATCH (n) RETURN n;
 
 ---
 
-### 8. Accessing Kafka
+### 7. Accessing Kafka
 
 ```bash
 # Enter the Kafka container
@@ -439,7 +439,7 @@ kafka-console-consumer.sh --topic my-topic --from-beginning --bootstrap-server l
 
 ---
 
-### 📅 9. Accessing Kafka Connect
+### 📅 8. Accessing Kafka Connect
 
 ```bash
 # Check Kafka Connect status
@@ -470,7 +470,7 @@ curl http://localhost:8083/connectors/file-source-connector/status
 
 ---
 
-### 📓 10. Accessing Jupyter Lab
+### 📓 9. Accessing Jupyter Lab
 
 ```bash
 # Jupyter Lab is accessible via web browser
@@ -481,7 +481,7 @@ curl http://localhost:8083/connectors/file-source-connector/status
 
 ---
 
-### 🎨 11. Accessing Hue
+### 🎨 10. Accessing Hue
 
 ```bash
 # Access Hue Web UI
