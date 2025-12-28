@@ -1,0 +1,78 @@
+# =============================================================================
+# APACHE AIRFLOW (Workflow Orchestration)
+# =============================================================================
+# Start with: docker-compose up -d
+# Stop with:  docker-compose down
+# Web UI:     http://localhost:8085 (admin/admin)
+# =============================================================================
+
+networks:
+  bigdata-net:
+    name: bigdata-net
+    external: true
+
+services:
+  postgres-airflow:
+    image: postgres:13
+    container_name: postgres-airflow
+    restart: always
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    networks: [bigdata-net]
+
+  airflow-init:
+    image: apache/airflow:3.0.0
+    container_name: airflow-init
+    command: version
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
+      - _AIRFLOW_DB_UPGRADE=true
+      - _AIRFLOW_WWW_USER_CREATE=true
+      - _AIRFLOW_WWW_USER_USERNAME=admin
+      - _AIRFLOW_WWW_USER_PASSWORD=admin
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+    networks: [bigdata-net]
+
+  airflow-webserver:
+    image: apache/airflow:3.0.0
+    container_name: airflow-webserver
+    restart: always
+    command: webserver
+    ports: ["8085:8080"]
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-apache-spark apache-airflow-providers-trino
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    networks: [bigdata-net]
+
+  airflow-scheduler:
+    image: apache/airflow:3.0.0
+    container_name: airflow-scheduler
+    restart: always
+    command: scheduler
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
+      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-apache-spark apache-airflow-providers-trino
+    depends_on:
+      postgres-airflow:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    networks: [bigdata-net]

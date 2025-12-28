@@ -12,11 +12,13 @@
   <img src="https://img.shields.io/badge/Jupyter-Lab-F37626?style=for-the-badge&logo=jupyter&logoColor=white" alt="Jupyter Lab"/>
   <img src="https://img.shields.io/badge/Hue-4.10.0-cyan?style=for-the-badge&logo=cloudera&logoColor=white" alt="Hue"/>
   <img src="https://img.shields.io/badge/zookeeper-7.6.0-8B4513?style=for-the-badge&logo=apache&logoColor=white" alt="Zookeeper"/>
+  <img src="https://img.shields.io/badge/Trino-438-00979D?style=for-the-badge&logo=trino&logoColor=white" alt="Trino"/>
+  <img src="https://img.shields.io/badge/Airflow-3.0.0-017CEE?style=for-the-badge&logo=apache-airflow&logoColor=white" alt="Airflow"/>
 </p>
 
 <p align="center">
   <strong>A modular Big Data ecosystem orchestrated with Docker Compose</strong><br>
-  <em>Start only what you need • Hadoop • Hive • HBase • Spark • Kafka • Cassandra • Neo4j • Zookeeper • Kafka Connect • Hue </em>
+  <em>Start only what you need • Hadoop • Hive • HBase • Spark • Kafka • Cassandra • Neo4j • Zookeeper • Kafka Connect • Hue • Trino • Airflow</em>
 </p>
 
 ---
@@ -86,7 +88,13 @@ BigData_Docker/
 ├── 📂 jupyter/                 # Interactive Notebooks
 │   └── docker-compose.yml
 │
-└── 📂 hue/                     # Web UI for Hadoop
+├── 📂 hue/                     # Web UI for Hadoop
+│   └── docker-compose.yml
+│
+├── 📂 trino/                   # Unified SQL Query Engine
+│   └── docker-compose.yml
+│
+└── 📂 airflow/                 # Workflow Orchestration
     └── docker-compose.yml
 ```
 
@@ -111,6 +119,8 @@ Start only the services you need with minimal resources:
 | 📅 **Kafka Connect** | `cd kafka-connect && docker-compose up -d` |       Kafka        |  ~1 GB  |
 |    📓 **Jupyter**    |    `cd jupyter && docker-compose up -d`    |       Spark        |  ~1 GB  |
 |      🎨 **Hue**      |      `cd hue && docker-compose up -d`      |       Hadoop       |  ~1 GB  |
+|     🚀 **Trino**     |     `cd trino && docker-compose up -d`     |        Hive        |  ~1 GB  |
+|    🌬️ **Airflow**    |    `cd airflow && docker-compose up -d`    | None (standalone)  |  ~1 GB  |
 
 #### 📋 Example: Start Hadoop + Spark
 
@@ -165,6 +175,8 @@ docker-compose up -d --build
 > - Kafka Connect
 > - Jupyter Lab
 > - Hue
+> - Trino
+> - Airflow
 
 ⏳ Allow **2-3 minutes** for all services to initialize:
 
@@ -219,7 +231,12 @@ docker-compose down -v
 │  │   HBase      │     │    Hive      │     │    Spark     │     │
 │  │ RegionServer │     │   Server     │     │   Master     │     │
 │  └──────────────┘     │   :10000     │     │    :8080     │     │
-│                       └──────────────┘     └──────────────┘     │
+│                       │              │     └──────────────┘     │
+│                       │   ┌──────────────┐                     │
+│                       │   │    Trino     │                     │
+│                       │   │    :8090     │                     │
+│                       │   └──────────────┘                     │
+│                       └──────────────┘                         │
 │                              │                    │             │
 │                              ▼                    ▼             │
 │                       ┌──────────────┐     ┌──────────────┐     │
@@ -239,10 +256,10 @@ docker-compose down -v
 │         │                    │                    │             │
 │         └────────────────────┼────────────────────┘             │
 │                              ▼                                  │
-│                       ┌──────────────┐                          │
-│                       │     Hue      │                          │
-│                       │   (Web UI)   │                          │
-│                       │    :8889     │                          │
+│                       ┌──────────────┐     ┌──────────────┐     │
+│                       │     Hue      │     │   Airflow    │     │
+│                       │   (Web UI)   │     │    :8085     │     │
+│                       │    :8889     │     └──────────────┘     │
 │                       └──────────────┘                          │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -255,7 +272,7 @@ docker-compose down -v
 ### 🌐 Web Interfaces
 
 |       Service        |    Component     |                       URL                        | Description                             |
-| :------------------: | :--------------: | :----------------------------------------------: | :-------------------------------------- |
+| :------------------: | :--------------: | :----------------------------------------------: | :-------------------------------------- | --- | ------------ | ------ | ---------------------------------------------- | --------------------------- |
 |     🗂️ **HDFS**      |   NameNode UI    |  [http://localhost:9870](http://localhost:9870)  | View HDFS storage & blocks              |
 | 🐝 **YARN Manager**  | Resource Manager |  [http://localhost:8088](http://localhost:8088)  | View running jobs & resources           |
 | ⚡ **Spark Master**  |    Master UI     |  [http://localhost:8080](http://localhost:8080)  | View Spark cluster status               |
@@ -265,7 +282,8 @@ docker-compose down -v
 |     🕸️ **Neo4j**     |     Browser      |  [http://localhost:7474](http://localhost:7474)  | Graph database browser                  |
 | 📅 **Kafka Connect** |     REST API     |  [http://localhost:8083](http://localhost:8083)  | Kafka Connect API                       |
 |  📓 **JupyterLab**   |      Lab UI      |  [http://localhost:8888](http://localhost:8888)  | Main IDE (Write Python/Spark code here) |
-|      🎨 **Hue**      |     Browser      |  [http://localhost:8889](http://localhost:8889)  | Cluster UI (Browse HDFS, SQL Editor)    |
+|      🎨 **Hue**      |     Browser      |  [http://localhost:8889](http://localhost:8889)  | Cluster UI (Browse HDFS, SQL Editor)    |     | 🚀 **Trino** | Web UI | [http://localhost:8090](http://localhost:8090) | Unified SQL query interface |
+|    🌬️ **Airflow**    |      Web UI      |  [http://localhost:8085](http://localhost:8085)  | Workflow orchestration (admin/admin)    |
 
 ### 🔗 Connection Ports
 
@@ -283,6 +301,8 @@ docker-compose down -v
 |    📓 **Jupyter**    | `8888`  |   HTTP   | Web browser                |
 |     🕸️ **Neo4j**     | `7687`  |   Bolt   | Cypher Shell, drivers      |
 |      🎨 **Hue**      | `8889`  |   HTTP   | Web browser                |
+|     🚀 **Trino**     | `8090`  |   HTTP   | Trino CLI, JDBC drivers    |
+|    🌬️ **Airflow**    | `8085`  |   HTTP   | Web browser                |
 
 ---
 
@@ -499,6 +519,57 @@ Hue provides a web interface for:
 - 📊 HBase browser
 - Kafka topics viewer
 
+---
+
+### 🚀 11. Accessing Trino
+
+```bash
+# Enter the Trino container
+docker exec -it trino bash
+```
+
+```bash
+# Inside container - Launch Trino CLI
+trino --server localhost:8080 --catalog hive --schema default
+```
+
+```sql
+-- Example Trino queries
+SHOW CATALOGS;
+SHOW SCHEMAS FROM hive;
+SELECT * FROM hive.default.table_name LIMIT 10;
+```
+
+> **📝 Note:** Trino provides unified SQL access across multiple data sources. Ensure Hive Metastore is running for Hive catalog access.
+
+---
+
+### 🌬️ 12. Accessing Airflow
+
+```bash
+# Access Airflow Web UI
+# Navigate to http://localhost:8085
+# Default credentials: admin / admin
+```
+
+```bash
+# Enter the Airflow webserver container for CLI commands
+docker exec -it airflow-webserver bash
+```
+
+```bash
+# List DAGs
+airflow dags list
+
+# Trigger a DAG (if available)
+airflow dags trigger example_dag
+
+# Check DAG runs
+airflow dags state example_dag
+```
+
+> **📝 Note:** Airflow is a workflow orchestration platform. DAGs (Directed Acyclic Graphs) define workflows. The web UI provides monitoring and management capabilities.
+
 > **📝 Note:** Configure Hue to connect to your Hadoop services via environment variables.
 
 ---
@@ -553,32 +624,43 @@ Hue provides a web interface for:
 │  │  (HDFS)   │         └───────────┘                        │
 │  └───────────┘                                              │
 │                                                             │
+│  ┌───────────┐         ┌───────────┐                        │
+│  │   Hive    │◄────────│   Trino   │                        │
+│  └───────────┘         └───────────┘                        │
+│                                                             │
+│  ┌───────────┐                                              │
+│  │  Airflow  │  (Standalone - no dependencies)              │
+│  └───────────┘                                              │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### 📊 Start Order by Use Case
 
-| Use Case                 | Start Order                             |
-| :----------------------- | :-------------------------------------- |
-| 🔥 **Spark Jobs**        | `hadoop` → `spark`                      |
-| 🐝 **Hive Queries**      | `hadoop` → `hive`                       |
-| 📊 **HBase Tables**      | `hadoop` → `zookeeper` → `hbase`        |
-| 🔵 **Cassandra**         | `cassandra` (standalone)                |
-| 🕸️ **Neo4j Graphs**      | `neo4j` (standalone)                    |
-| 📨 **Kafka Streams**     | `zookeeper` → `kafka`                   |
-| � **Kafka Connect**      | `zookeeper` → `kafka` → `kafka-connect` |
-| 📓 **Jupyter Notebooks** | `hadoop` → `spark` → `jupyter`          |
-| 🎨 **Hue Web UI**        | `hadoop` → `hue`                        |
-| 🌐 **Full Stack**        | Root `docker-compose.yml`               |
+| Use Case                     | Start Order                             |
+| :--------------------------- | :-------------------------------------- |
+| 🔥 **Spark Jobs**            | `hadoop` → `spark`                      |
+| 🐝 **Hive Queries**          | `hadoop` → `hive`                       |
+| 📊 **HBase Tables**          | `hadoop` → `zookeeper` → `hbase`        |
+| 🔵 **Cassandra**             | `cassandra` (standalone)                |
+| 🕸️ **Neo4j Graphs**          | `neo4j` (standalone)                    |
+| 📨 **Kafka Streams**         | `zookeeper` → `kafka`                   |
+| � **Kafka Connect**          | `zookeeper` → `kafka` → `kafka-connect` |
+| 📓 **Jupyter Notebooks**     | `hadoop` → `spark` → `jupyter`          |
+| 🎨 **Hue Web UI**            | `hadoop` → `hue`                        |
+| 🚀 **Trino Queries**         | `hadoop` → `hive` → `trino`             |
+| 🌬️ **Airflow Orchestration** | `airflow` (standalone)                  |
+| 🌐 **Full Stack**            | Root `docker-compose.yml`               |
 
 ### 🔗 Integration Details
 
-| Component |           Storage Backend           |      Coordination      |
-| :-------: | :---------------------------------: | :--------------------: |
-|   HBase   | HDFS (`hdfs://namenode:9000/hbase`) |       Zookeeper        |
-|   Hive    |    HDFS (`hdfs://namenode:9000`)    | PostgreSQL (Metastore) |
-|   Spark   |    HDFS (`hdfs://namenode:9000`)    |       Standalone       |
+| Component |                Storage Backend                |      Coordination      |
+| :-------: | :-------------------------------------------: | :--------------------: |
+|   HBase   |      HDFS (`hdfs://namenode:9000/hbase`)      |       Zookeeper        |
+|   Hive    |         HDFS (`hdfs://namenode:9000`)         | PostgreSQL (Metastore) |
+|   Spark   |         HDFS (`hdfs://namenode:9000`)         |       Standalone       |
+|   Trino   | Hive Metastore (thrift://hive-metastore:9083) |       Standalone       |
+|  Airflow  |             PostgreSQL (internal)             |       Standalone       |
 
 ### 🌐 Networking
 
@@ -651,6 +733,40 @@ docker logs hbase-master 2>&1 | grep -i "zookeeper"
 
 </details>
 
+<details>
+<summary><strong>🔴 Trino cannot connect to Hive</strong></summary>
+
+Ensure Hive Metastore is running and accessible:
+
+```bash
+docker logs hive-metastore 2>&1 | grep -i "started"
+```
+
+Check Trino logs for connection errors:
+
+```bash
+docker logs trino 2>&1 | grep -i "hive"
+```
+
+</details>
+
+<details>
+<summary><strong>🔴 Airflow webserver not accessible</strong></summary>
+
+Check if Airflow services are running:
+
+```bash
+docker ps | grep airflow
+```
+
+Check Airflow scheduler logs:
+
+```bash
+docker logs airflow-scheduler
+```
+
+</details>
+
 ---
 
 ## 📚 Additional Resources
@@ -665,6 +781,8 @@ docker logs hbase-master 2>&1 | grep -i "zookeeper"
 - 📖 [Kafka Connect Documentation](https://docs.confluent.io/platform/current/connect/index.html)
 - 📖 [Jupyter Lab Documentation](https://jupyterlab.readthedocs.io/en/stable/)
 - 📖 [Hue Documentation](https://docs.gethue.com/)
+- 📖 [Trino Documentation](https://trino.io/docs/)
+- 📖 [Apache Airflow Documentation](https://airflow.apache.org/docs/)
 
 ---
 

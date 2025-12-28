@@ -1,0 +1,28 @@
+# =============================================================================
+# TRINO (Unified SQL Query Engine)
+# =============================================================================
+# Start with: docker-compose up -d
+# Stop with:  docker-compose down
+# Web UI:     http://localhost:8090
+#
+# ⚠️  REQUIRES: Hive Metastore (start hive first!)
+# =============================================================================
+
+networks:
+  bigdata-net:
+    name: bigdata-net
+    external: true
+
+services:
+  trino:
+    image: trinodb/trino:latest
+    container_name: trino
+    ports: ["8090:8080"]
+    networks: [bigdata-net]
+    # Auto-connect to Hive Metastore
+    command: >
+      sh -c "mkdir -p /etc/trino/catalog &&
+      echo 'connector.name=hive
+      hive.metastore.uri=thrift://hive-metastore:9083
+      hive.allow-drop-table=true' > /etc/trino/catalog/hive.properties &&
+      /usr/lib/trino/bin/launcher run"
