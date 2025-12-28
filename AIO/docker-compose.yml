@@ -12,60 +12,69 @@ services:
   # ZOOKEEPER: The "Coordinator"
   # Used by HBase, Kafka, and High-Availability clusters to manage state.
   zookeeper:
-    image: zookeeper:3.5
+    image: bitnami/zookeeper:3.9
     container_name: zookeeper
     restart: always
     ports: ["2181:2181"]
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
     networks: [bigdata-net]
 
   # NAMENODE: HDFS Master
   # Stores metadata about where files are stored across the cluster.
   # UI: http://localhost:9870
   namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    image: apache/hadoop:3
     container_name: namenode
+    hostname: namenode
     restart: always
+    command: ["hdfs", "namenode"]
     ports: ["9870:9870", "9000:9000"]
-    volumes: [namenode_data:/hadoop/dfs/name]
     environment:
-      - CLUSTER_NAME=test
+      - HDFS_CONF_dfs_namenode_name_dir=file:///hadoop/dfs/name
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+    volumes:
+      - namenode_data:/hadoop/dfs/name
     networks: [bigdata-net]
 
   # DATANODE: HDFS Worker
   # The actual storage node where data blocks are kept.
   datanode:
-    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    image: apache/hadoop:3
     container_name: datanode
     restart: always
-    volumes: [datanode_data:/hadoop/dfs/data]
+    command: ["hdfs", "datanode"]
     environment:
-      - SERVICE_PRECONDITION=namenode:9870
+      - HDFS_CONF_dfs_datanode_data_dir=file:///hadoop/dfs/data
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on: [namenode]
+    volumes:
+      - datanode_data:/hadoop/dfs/data
     networks: [bigdata-net]
 
   # RESOURCEMANAGER: YARN Master
   # Manages resources (CPU/RAM) for jobs (MapReduce, Spark, etc.).
   # UI: http://localhost:8088
   resourcemanager:
-    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    image: apache/hadoop:3
     container_name: resourcemanager
     restart: always
+    command: ["yarn", "resourcemanager"]
     ports: ["8088:8088"]
     environment:
-      - SERVICE_PRECONDITION=namenode:9000 namenode:9870 datanode:9864
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     networks: [bigdata-net]
 
   # NODEMANAGER: YARN Worker
   # Executes the actual tasks scheduled by the ResourceManager.
   nodemanager:
-    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    image: apache/hadoop:3
     container_name: nodemanager
     restart: always
+    command: ["yarn", "nodemanager"]
     environment:
-      - SERVICE_PRECONDITION=namenode:9000 namenode:9870 datanode:9864 resourcemanager:8088
-    depends_on: [resourcemanager]
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     networks: [bigdata-net]
 
   # ===========================================================================
@@ -76,32 +85,38 @@ services:
   # Handles real-time data streaming.
   # Ports: 9092 (External access), 9093 (Internal Docker access).
   kafka:
-    image: wurstmeister/kafka:2.12-2.4.1
+    image: bitnami/kafka:3.6
     container_name: kafka
     restart: always
     ports: ["9092:9092"]
     environment:
-      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9093,OUTSIDE://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
-      KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
-      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
     depends_on: [zookeeper]
     networks: [bigdata-net]
 
-  # FLUME: Log Ingestion
-  # Agent that moves logs/events into HDFS.
-  # (Reuses the 'pig' universal client image to save space).
-  flume:
-    build: ./pig
-    image: bigdata-universal-client
-    container_name: flume
-    hostname: flume
-    restart: always
+  # KAFKA CONNECT: Replaces Flume
+  # Used for connecting Kafka to HDFS, Databases, etc.
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:latest
+    container_name: kafka-connect
+    ports: ["8083:8083"]
     environment:
-      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on: [namenode]
+      CONNECT_BOOTSTRAP_SERVERS: "kafka:9092"
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: "compose-connect-group"
+      CONNECT_CONFIG_STORAGE_TOPIC: "docker-connect-configs"
+      CONNECT_OFFSET_STORAGE_TOPIC: "docker-connect-offsets"
+      CONNECT_STATUS_STORAGE_TOPIC: "docker-connect-status"
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.storage.StringConverter"
+      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_REST_ADVERTISED_HOST_NAME: "kafka-connect"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+    depends_on: [kafka]
     networks: [bigdata-net]
 
   # ===========================================================================
@@ -112,35 +127,42 @@ services:
   # Allows you to query HDFS data using SQL (JDBC/ODBC).
   # JDBC URL: jdbc:hive2://localhost:10000
   hive-server:
-    image: bde2020/hive:2.3.2-postgresql-metastore
+    image: apache/hive:3.1.3
     container_name: hive-server
     restart: always
     ports: ["10000:10000", "10002:10002"]
     environment:
-      - HIVE_CORE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - SERVICE_NAME=hiveserver2
+      - HIVE_DB_EXTERNAL=true
+      - HIVE_DB_HOST=hive-postgres
+      - HIVE_DB_PORT=5432
+      - HIVE_DB_NAME=metastore
+      - HIVE_DB_USER=hive
+      - HIVE_DB_PASSWORD=hive
     depends_on: [namenode, hive-metastore]
     networks: [bigdata-net]
 
   # HIVE METASTORE: Schema Registry
   # Stores table definitions (columns, types, locations).
   hive-metastore:
-    image: bde2020/hive-metastore-postgresql:2.3.0
+    image: apache/hive:3.1.3
     container_name: hive-metastore
     restart: always
     environment:
-      - HIVE_SITE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-postgres:5432/metastore
-      - HIVE_SITE_CONF_javax_jdo_option_ConnectionDriverName=org.postgresql.Driver
-      - HIVE_SITE_CONF_javax_jdo_option_ConnectionUserName=hive
-      - HIVE_SITE_CONF_javax_jdo_option_ConnectionPassword=hive
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on: [namenode, hive-metastore-postgresql]
+      - SERVICE_NAME=metastore
+      - HIVE_DB_EXTERNAL=true
+      - HIVE_DB_HOST=hive-postgres
+      - HIVE_DB_PORT=5432
+      - HIVE_DB_NAME=metastore
+      - HIVE_DB_USER=hive
+      - HIVE_DB_PASSWORD=hive
+    depends_on: [hive-postgres]
     networks: [bigdata-net]
 
   # POSTGRES: Metastore Database
   # The actual database backend for Hive Metastore (stores schemas, not data).
-  hive-metastore-postgresql:
-    image: postgres:9.6
+  hive-postgres:
+    image: postgres:13
     container_name: hive-postgres
     restart: always
     environment:
@@ -157,27 +179,34 @@ services:
   # Manages Spark applications and schedules tasks on workers.
   # UI: http://localhost:8080
   spark-master:
-    image: bde2020/spark-master:3.0.0-hadoop3.2
+    image: bitnami/spark:3.5.0
     container_name: spark-master
     restart: always
     ports: ["8080:8080", "7077:7077"]
     environment:
-      - INIT_DAEMON_STEP=setup_spark
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on: [namenode]
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     networks: [bigdata-net]
 
   # SPARK WORKER: Processing Node
   # Executes Spark tasks (RDDs/DataFrames) and reports to Master.
   # UI: http://localhost:8081
   spark-worker:
-    image: bde2020/spark-worker:3.0.0-hadoop3.2
+    image: bitnami/spark:3.5.0
     container_name: spark-worker
     restart: always
     ports: ["8081:8081"]
     environment:
-      - SPARK_MASTER=spark://spark-master:7077
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     depends_on: [spark-master]
     networks: [bigdata-net]
 
@@ -189,25 +218,25 @@ services:
   # Coordinates the HBase cluster.
   # UI: http://localhost:16010
   hbase-master:
-    image: bde2020/hbase-master:1.0.0-hbase1.2.6
+    image: harisekhon/hbase:2.1
     container_name: hbase-master
     ports: ["16010:16010"]
     environment:
+      - HBASE_MANAGES_ZK=false
       - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
       - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
-      - HBASE_CONF_hbase_cluster_distributed=true
     depends_on: [namenode, zookeeper]
     networks: [bigdata-net]
 
   # HBASE REGIONSERVER: Column-Store Worker
   # Stores and manages the actual HBase data regions.
   hbase-regionserver:
-    image: bde2020/hbase-regionserver:1.0.0-hbase1.2.6
+    image: harisekhon/hbase:2.1
     container_name: hbase-regionserver
     environment:
+      - HBASE_MANAGES_ZK=false
       - HBASE_CONF_hbase_rootdir=hdfs://namenode:9000/hbase
       - HBASE_CONF_hbase_zookeeper_quorum=zookeeper
-      - HBASE_CONF_hbase_cluster_distributed=true
     depends_on: [hbase-master]
     networks: [bigdata-net]
 
@@ -215,7 +244,7 @@ services:
   # Standalone NoSQL database for high-availability apps.
   # Port: 9042 (CQL)
   cassandra:
-    image: cassandra:4.0
+    image: cassandra:4.1
     container_name: cassandra
     restart: always
     ports: ["9042:9042"]
@@ -242,36 +271,18 @@ services:
   # CLIENTS & UI TOOLS
   # ===========================================================================
 
-  # UNIVERSAL CLIENT: Pig + Sqoop + Flume
-  # A custom container with multiple CLI tools installed.
-  # Use: docker exec -it pig bash (to run pig or sqoop commands)
-  pig:
-    build: ./pig
-    image: bigdata-universal-client
-    container_name: pig
-    hostname: pig
-    stdin_open: true
-    tty: true
+  # SPARK-CLIENT (Replaces Pig/Sqoop)
+  # This container sits idle; use it to submit jobs or run spark-shell
+  # Command: docker exec -it spark-client bash
+  spark-client:
+    image: bitnami/spark:3.5.0
+    container_name: spark-client
+    command: tail -f /dev/null
     environment:
-      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
-      - MAPRED_CONF_mapreduce_framework_name=yarn
-    depends_on: [namenode, resourcemanager, hive-postgres]
+      - SPARK_MASTER_URL=spark://spark-master:7077
     networks: [bigdata-net]
 
-  # OOZIE: Workflow Scheduler
-  # Schedules complex jobs (chains of Hive, Spark, etc.).
-  # UI: http://localhost:11000/oozie
-  oozie:
-    image: dvoros/oozie:4.3.0
-    container_name: oozie
-    ports: ["11000:11000"]
-    environment:
-      - OOZIE_CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-    depends_on: [namenode, resourcemanager]
-    networks: [bigdata-net]
+  # OOZIE: Dropping Oozie is recommended in modern stacks
 
   # HUE: Hadoop User Experience
   # Web UI for browsing HDFS, Hive Editor, and Job Browser.
@@ -297,4 +308,3 @@ volumes:
   cassandra_data:
   neo4j_data:
   neo4j_logs:
-  pig_scripts:
