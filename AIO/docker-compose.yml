@@ -381,12 +381,9 @@ services:
         mkdir -p /etc/trino/catalog
         echo "connector.name=hive" > /etc/trino/catalog/hive.properties
         echo "hive.metastore.uri=thrift://hive-metastore:9083" >> /etc/trino/catalog/hive.properties
-        echo "hive.allow-drop-table=true" >> /etc/trino/catalog/hive.properties
         echo "hive.security=allow-all" >> /etc/trino/catalog/hive.properties
         # Start Trino
         /usr/lib/trino/bin/run-trino
-    volumes:
-      - ./hive.properties:/etc/trino/catalog/hive.properties
     depends_on: [hive-metastore]
 
 volumes:
