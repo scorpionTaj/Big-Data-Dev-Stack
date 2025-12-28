@@ -211,7 +211,7 @@ services:
       - SPARK_WORKER_MEMORY=1G
     networks: [bigdata-net]
 
-  # JUPYTER LAB: Replaces "spark-client"
+  # JUPYTER LAB: Interactive Notebooks
   # UI accessible at http://localhost:8888 (Password in logs)
   jupyter:
     image: jupyter/pyspark-notebook:spark-3.5.0
@@ -222,6 +222,7 @@ services:
       - JUPYTER_ENABLE_LAB=yes
     volumes:
       - ./notebooks:/home/jovyan/work
+      - ./dags:/home/jovyan/work/dags
     networks: [bigdata-net]
 
   # ===========================================================================
