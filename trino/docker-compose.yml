@@ -20,11 +20,5 @@ services:
     ports: ["8090:8080"]
     networks: [bigdata-net]
     volumes:
-      - ./trino-catalog:/etc/trino/catalog
-    # Auto-connect to Hive Metastore
-    command: >
-      sh -c "mkdir -p /etc/trino/catalog &&
-      echo 'connector.name=hive
-      hive.metastore.uri=thrift://hive-metastore:9083
-      hive.allow-drop-table=true' > /etc/trino/catalog/hive.properties &&
-      /usr/lib/trino/bin/launcher run"
+      - ./hive.properties:/etc/trino/catalog/hive.properties
+    depends_on: [hive-metastore]

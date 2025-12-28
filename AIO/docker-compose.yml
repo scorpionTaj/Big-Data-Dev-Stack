@@ -374,7 +374,7 @@ services:
     ports: ["8090:8080"]
     networks: [bigdata-net]
     volumes:
-      - ./trino-catalog:/etc/trino/catalog
+      - ./hive.properties:/etc/trino/catalog/hive.properties
     depends_on: [hive-metastore]
 
 volumes:
