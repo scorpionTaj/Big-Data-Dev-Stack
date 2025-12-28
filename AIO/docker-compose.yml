@@ -314,23 +314,9 @@ services:
       retries: 5
     networks: [bigdata-net]
 
-  airflow-init:
-    image: apache/airflow:2.11.0
-    container_name: airflow-init
-    command: version
-    environment:
-      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
-      - _AIRFLOW_DB_UPGRADE=true
-      - _AIRFLOW_WWW_USER_CREATE=true
-      - _AIRFLOW_WWW_USER_USERNAME=admin
-      - _AIRFLOW_WWW_USER_PASSWORD=admin
-    depends_on:
-      postgres-airflow:
-        condition: service_healthy
-    networks: [bigdata-net]
-
   airflow-webserver:
-    image: apache/airflow:2.11.0
+    build: . # <--- USES YOUR DOCKERFILE
+    image: my-custom-airflow:2.10 # <--- Reuses the built image
     container_name: airflow-webserver
     restart: always
     command: webserver
@@ -340,7 +326,7 @@ services:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
-      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-apache-spark apache-airflow-providers-trino
+      # Note: _PIP_ADDITIONAL_REQUIREMENTS is REMOVED because it's built-in now!
     depends_on:
       postgres-airflow:
         condition: service_healthy
@@ -349,7 +335,8 @@ services:
     networks: [bigdata-net]
 
   airflow-scheduler:
-    image: apache/airflow:2.11.0
+    build: . # <--- USES YOUR DOCKERFILE
+    image: my-custom-airflow:2.10 # <--- Reuses the built image
     container_name: airflow-scheduler
     restart: always
     command: scheduler
@@ -357,7 +344,6 @@ services:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__FERNET_KEY=46BKJoQYlPPOexq0OhDZnIlNepKFf87WFwLbfzqDDho=
-      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-apache-spark apache-airflow-providers-trino
     depends_on:
       postgres-airflow:
         condition: service_healthy
