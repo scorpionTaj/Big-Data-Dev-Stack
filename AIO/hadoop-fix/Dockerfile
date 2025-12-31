@@ -3,6 +3,9 @@ FROM apache/hadoop:3.3.6
 # Stay as root to allow permission fixing at runtime
 USER root
 
+# Installer Python 3 (nécessaire pour Hadoop Streaming)
+RUN yum update -y && yum install -y python3
+
 # 1. Install the entrypoint script
 COPY entrypoint.sh /usr/local/bin/custom-entrypoint.sh
 RUN chmod +x /usr/local/bin/custom-entrypoint.sh
