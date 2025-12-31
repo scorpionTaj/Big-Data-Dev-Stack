@@ -7,7 +7,7 @@
 # Bolt:       bolt://localhost:7687
 #
 # ✅ STANDALONE - No dependencies required
-# Default credentials: neo4j / neo4j (will prompt to change on first login)
+# Default credentials: neo4j / password123 (will prompt to change on first login)
 # =============================================================================
 
 networks:

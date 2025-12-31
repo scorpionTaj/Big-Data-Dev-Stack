@@ -23,7 +23,8 @@ services:
   # Stores metadata about where files are stored across the cluster.
   # UI: http://localhost:9870
   namenode:
-    image: apache/hadoop:3
+    build: ./hadoop-fix
+    image: hadoop-fixed:3.3.6
     container_name: namenode
     hostname: namenode
     restart: always
@@ -39,7 +40,8 @@ services:
   # DATANODE: HDFS Worker
   # The actual storage node where data blocks are kept.
   datanode:
-    image: apache/hadoop:3
+    build: ./hadoop-fix
+    image: hadoop-fixed:3.3.6
     container_name: datanode
     restart: always
     command: ["hdfs", "datanode"]
@@ -54,7 +56,8 @@ services:
   # Manages resources (CPU/RAM) for jobs (MapReduce, Spark, etc.).
   # UI: http://localhost:8088
   resourcemanager:
-    image: apache/hadoop:3
+    build: ./hadoop-fix
+    image: hadoop-fixed:3.3.6
     container_name: resourcemanager
     restart: always
     command: ["yarn", "resourcemanager"]
@@ -67,7 +70,8 @@ services:
   # NODEMANAGER: YARN Worker
   # Executes the actual tasks scheduled by the ResourceManager.
   nodemanager:
-    image: apache/hadoop:3
+    build: ./hadoop-fix
+    image: hadoop-fixed:3.3.6
     container_name: nodemanager
     restart: always
     command: ["yarn", "nodemanager"]
