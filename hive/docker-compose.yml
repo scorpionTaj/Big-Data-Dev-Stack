@@ -21,7 +21,7 @@ services:
   hive-postgres:
     image: postgres:13
     container_name: hive-postgres
-    restart: unless-stopped
+    restart: no
     environment:
       - POSTGRES_DB=metastore
       - POSTGRES_USER=hive
@@ -37,7 +37,7 @@ services:
   hive-metastore:
     image: apache/hive:3.1.3
     container_name: hive-metastore
-    restart: unless-stopped
+    restart: no
     environment:
       - SERVICE_NAME=metastore
       - HIVE_DB_EXTERNAL=true
@@ -57,7 +57,7 @@ services:
   hive-server:
     image: apache/hive:3.1.3
     container_name: hive-server
-    restart: unless-stopped
+    restart: no
     ports:
       - "10000:10000" # JDBC
       - "10002:10002" # Web UI
