@@ -20,7 +20,7 @@ services:
   kafka-connect:
     image: confluentinc/cp-kafka-connect:7.6.0
     container_name: kafka-connect
-    restart: always
+    restart: unless-stopped
     ports: ["8083:8083"]
     environment:
       CONNECT_BOOTSTRAP_SERVERS: "kafka:29092"

@@ -20,7 +20,7 @@ services:
   cassandra:
     image: cassandra:4.1
     container_name: cassandra
-    restart: always
+    restart: unless-stopped
     ports: ["9042:9042"]
     environment:
       - CASSANDRA_CLUSTER_NAME=DevCluster

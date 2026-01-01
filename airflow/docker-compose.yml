@@ -15,7 +15,7 @@ services:
   postgres-airflow:
     image: postgres:13
     container_name: postgres-airflow
-    restart: always
+    restart: unless-stopped
     environment:
       - POSTGRES_USER=airflow
       - POSTGRES_PASSWORD=airflow
@@ -46,7 +46,7 @@ services:
     build: . # <--- USES YOUR DOCKERFILE
     image: my-custom-airflow:2.10 # <--- Reuses the built image
     container_name: airflow-webserver
-    restart: always
+    restart: unless-stopped
     command: webserver
     ports: ["8085:8080"]
     environment:
@@ -66,7 +66,7 @@ services:
     build: . # <--- USES YOUR DOCKERFILE
     image: my-custom-airflow:2.10 # <--- Reuses the built image
     container_name: airflow-scheduler
-    restart: always
+    restart: unless-stopped
     command: scheduler
     environment:
       - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres-airflow/airflow

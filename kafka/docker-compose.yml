@@ -20,7 +20,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.6.0
     container_name: kafka
-    restart: always
+    restart: unless-stopped
     ports: ["9092:9092"]
     environment:
       KAFKA_BROKER_ID: 1

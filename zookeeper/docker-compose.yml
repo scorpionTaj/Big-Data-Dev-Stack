@@ -19,7 +19,7 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
     container_name: zookeeper
-    restart: always
+    restart: unless-stopped
     ports:
       - "2181:2181"
     environment:
