@@ -24,7 +24,16 @@ echo '<?xml version="1.0" encoding="UTF-8"?>
         <name>fs.defaultFS</name>
         <value>hdfs://namenode:9000</value>
     </property>
-</configuration>' > /opt/hadoop/etc/hadoop/core-site.xml
+
+    <property>
+        <name>hadoop.proxyuser.hue.hosts</name>
+        <value>*</value>
+    </property>
+    <property>
+        <name>hadoop.proxyuser.hue.groups</name>
+        <value>*</value>
+    </property>
+    </configuration>' > /opt/hadoop/etc/hadoop/core-site.xml
 
 # 5. Write hdfs-site.xml (Storage Paths)
 echo '<?xml version="1.0" encoding="UTF-8"?>

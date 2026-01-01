@@ -23,7 +23,10 @@ services:
     restart: no
     ports: ["9870:9870", "9000:9000"]
     environment:
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - CORE_CONF_hadoop_proxyuser_hue_hosts=*
+      - CORE_CONF_hadoop_proxyuser_hue_groups=*
     networks: [bigdata-net]
 
   # ---------------------------------------------------------------------------
@@ -36,7 +39,10 @@ services:
     command: ["hdfs", "datanode"]
     restart: no
     environment:
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - CORE_CONF_hadoop_proxyuser_hue_hosts=*
+      - CORE_CONF_hadoop_proxyuser_hue_groups=*
     networks: [bigdata-net]
 
   # ---------------------------------------------------------------------------
@@ -52,6 +58,8 @@ services:
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
       - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - CORE_CONF_hadoop_proxyuser_hue_hosts=*
+      - CORE_CONF_hadoop_proxyuser_hue_groups=*
     networks: [bigdata-net]
 
   # ---------------------------------------------------------------------------
@@ -67,4 +75,6 @@ services:
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
       - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - CORE_CONF_hadoop_proxyuser_hue_hosts=*
+      - CORE_CONF_hadoop_proxyuser_hue_groups=*
     networks: [bigdata-net]
