@@ -4,7 +4,11 @@ FROM apache/hadoop:3.3.6
 USER root
 
 # Installer Python 3 (nécessaire pour Hadoop Streaming)
-RUN yum update -y && yum install -y python3
+RUN sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-* && \
+    sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-* && \
+    yum clean all && \
+    yum update -y && \
+    yum install -y python3
 
 # 1. Install the entrypoint script
 COPY entrypoint.sh /usr/local/bin/custom-entrypoint.sh
