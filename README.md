@@ -624,7 +624,7 @@ graph LR
     JUP --> SPARK
     HUE --> HADOOP
 
-    style HADOOP fill:#ffd700
+    style HADOOP fill:#CAB422
     style ZK fill:#8b4513
     style CASS fill:#4a90e2
     style NEO fill:#008cc1
