@@ -14,11 +14,12 @@
   <img src="https://img.shields.io/badge/zookeeper-7.6.0-8B4513?style=for-the-badge&logo=apache&logoColor=white" alt="Zookeeper"/>
   <img src="https://img.shields.io/badge/Trino-latest-00979D?style=for-the-badge&logo=trino&logoColor=white" alt="Trino"/>
   <img src="https://img.shields.io/badge/Airflow-3.0.0-017CEE?style=for-the-badge&logo=apache-airflow&logoColor=white" alt="Airflow"/>
+  <img src="https://img.shields.io/badge/Pig-0.17.0-FF6B35?style=for-the-badge&logo=apache&logoColor=white" alt="Pig"/>
 </p>
 
 <p align="center">
   <strong>A modular Big Data ecosystem orchestrated with Docker Compose</strong><br>
-  <em>Start only what you need • Hadoop • Hive • HBase • Spark • Kafka • Cassandra • Neo4j • Zookeeper • Kafka Connect • Hue • Trino • Airflow</em>
+  <em>Start only what you need • Hadoop • Hive • HBase • Spark • Kafka • Cassandra • Neo4j • Zookeeper • Kafka Connect • Hue • Trino • Airflow • Pig</em>
 </p>
 
 ---
@@ -94,8 +95,9 @@ BigData_Docker/
 ├── 📂 trino/                   # Unified SQL Query Engine
 │   └── docker-compose.yml
 │
-└── 📂 airflow/                 # Workflow Orchestration
-    └── docker-compose.yml
+└── 📂 airflow/                 # Workflow Orchestration│   └── docker-compose.yml
+│
+└── 📂 Pig/                     # Data Flow Language    └── docker-compose.yml
 ```
 
 ---
@@ -121,6 +123,7 @@ Start only the services you need with minimal resources:
 |      🎨 **Hue**      |      `cd hue && docker-compose up -d`      |       Hadoop       |  ~1 GB  |
 |     🚀 **Trino**     |     `cd trino && docker-compose up -d`     |        Hive        |  ~1 GB  |
 |    🌬️ **Airflow**    |    `cd airflow && docker-compose up -d`    | None (standalone)  |  ~1 GB  |
+|      🐷 **Pig**      |      `cd Pig && docker-compose up -d`      |       Hadoop       | ~512 MB |
 
 #### 📋 Example: Start Hadoop + Spark
 
@@ -578,6 +581,43 @@ airflow dags state example_dag
 
 ---
 
+### 🐷 13. Accessing Pig
+
+```bash
+# Enter the Pig container
+docker exec -it pig bash
+```
+
+```bash
+# Inside container - Launch Pig interactive shell
+pig
+```
+
+```
+# In Pig shell - Example commands
+A = LOAD '/user/hadoop/input.txt' AS (line:chararray);
+B = FILTER A BY line MATCHES '.*word.*';
+STORE B INTO '/user/hadoop/output';
+QUIT;
+```
+
+```bash
+# Or run a Pig script directly
+pig /opt/pig-scripts/sample.pig
+```
+
+```bash
+# Run Pig in MapReduce mode (default)
+pig -x mapreduce /opt/pig-scripts/sample.pig
+
+# Run Pig in local mode (uses local filesystem, not HDFS)
+pig -x local /opt/pig-scripts/sample.pig
+```
+
+> **📝 Note:** Pig requires Hadoop to be running. It compiles Pig scripts into MapReduce jobs. Monitor jobs via YARN ResourceManager UI at `http://localhost:8088`.
+
+---
+
 ## 📝 Configuration Notes
 
 ### 🔗 Service Dependencies
@@ -646,6 +686,7 @@ graph LR
 | 🎨 **Hue Web UI**            | `hadoop` → `hue`                        |
 | 🚀 **Trino Queries**         | `hadoop` → `hive` → `trino`             |
 | 🌬️ **Airflow Orchestration** | `airflow` (standalone)                  |
+| 🐷 **Pig Scripts**           | `hadoop` → `pig`                        |
 | 🌐 **Full Stack**            | Root `docker-compose.yml`               |
 
 ### 🔗 Integration Details
