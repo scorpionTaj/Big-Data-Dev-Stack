@@ -322,7 +322,7 @@ services:
     ports: ["8889:8888"]
     volumes:
       - ./hue-overrides.ini:/usr/share/hue/desktop/conf/z-custom.ini
-    depends_on: [namenode, resourcemanager, hive-server]
+    depends_on: [namenode, resourcemanager, hive-server, pig]
     networks: [bigdata-net]
 
   # ===========================================================================
