@@ -91,6 +91,14 @@ echo '<?xml version="1.0" encoding="UTF-8"?>
         <name>mapreduce.application.classpath</name>
         <value>$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/*:$HADOOP_MAPRED_HOME/share/hadoop/mapreduce/lib/*</value>
     </property>
+    <property>
+        <name>mapreduce.jobhistory.address</name>
+        <value>resourcemanager:10020</value>
+    </property>
+    <property>
+        <name>mapreduce.jobhistory.webapp.address</name>
+        <value>resourcemanager:19888</value>
+    </property>
 </configuration>' > /opt/hadoop/etc/hadoop/mapred-site.xml
 
 # -----------------------------------------------------------------------------
