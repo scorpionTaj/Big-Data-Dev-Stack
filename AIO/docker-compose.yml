@@ -166,8 +166,9 @@ services:
     ports: ["10000:10000", "10002:10002"]
     environment:
       - SERVICE_NAME=hiveserver2
+      # 1. On remet le driver pour qu'il sache qu'on est sur Postgres
       - DB_DRIVER=postgres
-      - SKIP_SCHEMA_INIT=true
+
       - HIVE_DB_EXTERNAL=true
       - HIVE_DB_HOST=hive-postgres
       - HIVE_DB_PORT=5432
@@ -180,10 +181,9 @@ services:
       hive-postgres:
         condition: service_healthy
     volumes:
-      # Mount the Config
       - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
-      # Mount the Driver
       - ./drivers/postgresql-42.7.9.jar:/opt/hive/lib/postgresql-42.7.9.jar
+    entrypoint: ["/opt/hive/bin/hive", "--service", "hiveserver2"]
     networks: [bigdata-net]
 
   # HIVE METASTORE: Schema Registry
