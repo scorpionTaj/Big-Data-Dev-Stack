@@ -173,6 +173,11 @@ services:
       - HIVE_DB_USER=hive
       - HIVE_DB_PASSWORD=hive
     depends_on: [namenode, hive-metastore]
+    volumes:
+      # Mount the Config
+      - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
+      # Mount the Driver
+      - ./drivers/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar
     networks: [bigdata-net]
 
   # HIVE METASTORE: Schema Registry
@@ -190,6 +195,11 @@ services:
       - HIVE_DB_USER=hive
       - HIVE_DB_PASSWORD=hive
     depends_on: [hive-postgres]
+    volumes:
+      # Mount the Config
+      - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
+      # Mount the Driver
+      - ./drivers/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar
     networks: [bigdata-net]
 
   # POSTGRES: Metastore Database
