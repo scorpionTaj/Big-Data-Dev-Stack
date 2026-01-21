@@ -174,7 +174,11 @@ services:
       - HIVE_DB_NAME=metastore
       - HIVE_DB_USER=hive
       - HIVE_DB_PASSWORD=hive
-    depends_on: [namenode, hive-metastore]
+    depends_on:
+      hive-metastore:
+        condition: service_started
+      hive-postgres:
+        condition: service_healthy
     volumes:
       # Mount the Config
       - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
@@ -191,18 +195,27 @@ services:
     environment:
       - SERVICE_NAME=metastore
       - DB_DRIVER=postgres
+      - SKIP_SCHEMA_INIT=true
       - HIVE_DB_EXTERNAL=true
       - HIVE_DB_HOST=hive-postgres
       - HIVE_DB_PORT=5432
       - HIVE_DB_NAME=metastore
       - HIVE_DB_USER=hive
       - HIVE_DB_PASSWORD=hive
-    depends_on: [hive-postgres]
+    depends_on:
+      hive-postgres:
+        condition: service_healthy
     volumes:
       # Mount the Config
       - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
       # Mount the Driver
       - ./drivers/postgresql-42.7.9.jar:/opt/hive/lib/postgresql-42.7.9.jar
+    command:
+      - /bin/sh
+      - -c
+      - |
+        /opt/hive/bin/schematool -dbType postgres -initSchema || echo "Schema init failed (likely already exists), skipping..."
+        /opt/hive/bin/hive --service metastore
     networks: [bigdata-net]
 
   # POSTGRES: Metastore Database
@@ -215,6 +228,11 @@ services:
       - POSTGRES_DB=metastore
       - POSTGRES_USER=hive
       - POSTGRES_PASSWORD=hive
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks: [bigdata-net]
 
   # ===========================================================================
