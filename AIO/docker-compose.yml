@@ -166,6 +166,8 @@ services:
     ports: ["10000:10000", "10002:10002"]
     environment:
       - SERVICE_NAME=hiveserver2
+      - DB_DRIVER=postgres
+      - SKIP_SCHEMA_INIT=true
       - HIVE_DB_EXTERNAL=true
       - HIVE_DB_HOST=hive-postgres
       - HIVE_DB_PORT=5432
@@ -177,7 +179,7 @@ services:
       # Mount the Config
       - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
       # Mount the Driver
-      - ./drivers/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar
+      - ./drivers/postgresql-42.7.9.jar:/opt/hive/lib/postgresql-42.7.9.jar
     networks: [bigdata-net]
 
   # HIVE METASTORE: Schema Registry
@@ -188,6 +190,7 @@ services:
     restart: no
     environment:
       - SERVICE_NAME=metastore
+      - DB_DRIVER=postgres
       - HIVE_DB_EXTERNAL=true
       - HIVE_DB_HOST=hive-postgres
       - HIVE_DB_PORT=5432
@@ -199,7 +202,7 @@ services:
       # Mount the Config
       - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
       # Mount the Driver
-      - ./drivers/postgresql-42.7.3.jar:/opt/hive/lib/postgresql-42.7.3.jar
+      - ./drivers/postgresql-42.7.9.jar:/opt/hive/lib/postgresql-42.7.9.jar
     networks: [bigdata-net]
 
   # POSTGRES: Metastore Database
