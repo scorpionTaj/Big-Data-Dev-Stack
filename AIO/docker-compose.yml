@@ -175,6 +175,7 @@ services:
       - HIVE_DB_NAME=metastore
       - HIVE_DB_USER=hive
       - HIVE_DB_PASSWORD=hive
+      - HADOOP_USER_NAME=hive
     depends_on:
       hive-metastore:
         condition: service_started
@@ -183,7 +184,19 @@ services:
     volumes:
       - ./conf/hive-site.xml:/opt/hive/conf/hive-site.xml
       - ./drivers/postgresql-42.7.9.jar:/opt/hive/lib/postgresql-42.7.9.jar
-    entrypoint: ["/opt/hive/bin/hive", "--service", "hiveserver2"]
+
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "PATCH: Suppression de l'ancien Guava..."
+        rm -f /opt/hive/lib/guava-19.0.jar
+
+        echo "PATCH: Copie du nouveau Guava depuis Hadoop..."
+        cp /opt/hadoop/share/hadoop/common/lib/guava-*.jar /opt/hive/lib/
+
+        echo "DEMARRAGE: Lancement de HiveServer2..."
+        /opt/hive/bin/hive --service hiveserver2 --hiveconf hive.server2.thrift.bind.host=0.0.0.0 --hiveconf hive.root.logger=INFO,console --hiveconf hive.support.concurrency=false --hiveconf hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DummyTxnManager --hiveconf hive.server2.enable.doAs=false
     networks: [bigdata-net]
 
   # HIVE METASTORE: Schema Registry
